@@ -108,7 +108,6 @@ static inline float plse_gradient(float x) { return (x < 0 || x > 1) ? .01 : .12
 #define AVGPOOL_LAYER_H
 typedef layer avgpool_layer;
 
-image get_avgpool_image(avgpool_layer l);
 avgpool_layer make_avgpool_layer(int batch, int w, int h, int c);
 void resize_avgpool_layer(avgpool_layer *l, int w, int h);
 void forward_avgpool_layer(const avgpool_layer l, network net);
@@ -182,8 +181,6 @@ void update_convolutional_layer(convolutional_layer layer, update_args a);
 image *visualize_convolutional_layer(convolutional_layer layer, char *window, image *prev_weights);
 void binarize_weights(float *weights, int n, int size, float *binary);
 void swap_binary(convolutional_layer *l);
-void binarize_weights2(float *weights, int n, int size, char *binary, float *scales);
-
 void backward_convolutional_layer(convolutional_layer layer, network net);
 
 void add_bias(float *output, float *biases, int batch, int n, int size);
@@ -196,7 +193,6 @@ image get_convolutional_weight(convolutional_layer layer, int i);
 int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);
 #endif
-
 
 //cost_layer.h
 #ifndef COST_LAYER_H
@@ -216,7 +212,6 @@ void backward_cost_layer_gpu(const cost_layer l, network net);
 #endif
 
 #endif
-
 
 //crnn_layer.h
 #ifndef CRNN_LAYER_H
@@ -330,8 +325,6 @@ layer make_iseg_layer(int batch, int w, int h, int classes, int ids);
 void forward_iseg_layer(const layer l, network net);
 void backward_iseg_layer(const layer l, network net);
 void resize_iseg_layer(layer *l, int w, int h);
-int iseg_num_detections(layer l, float thresh);
-
 #ifdef GPU
 void forward_iseg_layer_gpu(const layer l, network net);
 void backward_iseg_layer_gpu(layer l, network net);
@@ -372,10 +365,7 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
 void forward_local_layer(const local_layer layer, network net);
 void backward_local_layer(local_layer layer, network net);
 void update_local_layer(local_layer layer, update_args a);
-
-void bias_output(float *output, float *biases, int batch, int n, int size);
 void backward_bias(float *bias_updates, float *delta, int batch, int n, int size);
-
 #endif
 
 //logistic_layer.h
@@ -435,8 +425,6 @@ layer make_normalization_layer(int batch, int w, int h, int c, int size, float a
 void resize_normalization_layer(layer *layer, int h, int w);
 void forward_normalization_layer(const layer layer, network net);
 void backward_normalization_layer(const layer layer, network net);
-void visualize_normalization_layer(layer layer, char *window);
-
 #ifdef GPU
 void forward_normalization_layer_gpu(const layer layer, network net);
 void backward_normalization_layer_gpu(const layer layer, network net);

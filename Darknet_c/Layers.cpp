@@ -1520,8 +1520,6 @@ image *visualize_convolutional_layer(convolutional_layer l, char *window, image 
 }
 
 
-
-
 //cost_layer.c
 COST_TYPE get_cost_type(char *s)
 {
