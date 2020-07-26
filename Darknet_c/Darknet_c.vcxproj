@@ -136,6 +136,8 @@
   <ItemGroup>
     <ClInclude Include="darknet.h" />
     <ClInclude Include="layers.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="stb_image_write.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

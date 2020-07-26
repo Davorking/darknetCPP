@@ -588,193 +588,529 @@ typedef struct list{
 } list;
 #endif
 
+//blas.h
+#ifndef BLAS_H
+#define BLAS_H
+#include "darknet.h"
+
+void flatten(float *x, int size, int layers, int batch, int forward);
+void pm(int M, int N, float *A);
+float *random_matrix(int rows, int cols);
+void time_random_matrix(int TA, int TB, int m, int k, int n);
+void reorg_cpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out);
+
+void test_blas();
+
+void inter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT);
+void deinter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT);
+void mult_add_into_cpu(int N, float *X, float *Y, float *Z);
+
+void const_cpu(int N, float ALPHA, float *X, int INCX);
+void constrain_gpu(int N, float ALPHA, float * X, int INCX);
+void pow_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
+void mul_cpu(int N, float *X, int INCX, float *Y, int INCY);
+
+int test_gpu_blas();
+void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float s1, float s2, float *out);
+
+void mean_cpu(float *x, int batch, int filters, int spatial, float *mean);
+void variance_cpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
+
+void scale_bias(float *output, float *scales, int batch, int n, int size);
+void backward_scale_cpu(float *x_norm, float *delta, int batch, int n, int size, float *scale_updates);
+void mean_delta_cpu(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta);
+void  variance_delta_cpu(float *x, float *delta, float *mean, float *variance, int batch, int filters, int spatial, float *variance_delta);
+void normalize_delta_cpu(float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta);
+void l2normalize_cpu(float *x, float *dx, int batch, int filters, int spatial);
+
+void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error);
+void l2_cpu(int n, float *pred, float *truth, float *delta, float *error);
+void l1_cpu(int n, float *pred, float *truth, float *delta, float *error);
+void logistic_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
+void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
+void weighted_sum_cpu(float *a, float *b, float *s, int num, float *c);
+void weighted_delta_cpu(float *a, float *b, float *s, float *da, float *db, float *ds, int n, float *dc);
+
+void softmax(float *input, int n, float temp, int stride, float *output);
+void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
+void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out);
+
+#ifdef GPU
+#include "cuda.h"
+#include "tree.h"
+
+void axpy_gpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
+void axpy_gpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
+void copy_gpu(int N, float * X, int INCX, float * Y, int INCY);
+void copy_gpu_offset(int N, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
+void add_gpu(int N, float ALPHA, float * X, int INCX);
+void supp_gpu(int N, float ALPHA, float * X, int INCX);
+void mask_gpu(int N, float * X, float mask_num, float * mask, float val);
+void scale_mask_gpu(int N, float * X, float mask_num, float * mask, float scale);
+void const_gpu(int N, float ALPHA, float *X, int INCX);
+void pow_gpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
+void mul_gpu(int N, float *X, int INCX, float *Y, int INCY);
+
+void mean_gpu(float *x, int batch, int filters, int spatial, float *mean);
+void variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
+void normalize_gpu(float *x, float *mean, float *variance, int batch, int filters, int spatial);
+void l2normalize_gpu(float *x, float *dx, int batch, int filters, int spatial);
+
+void normalize_delta_gpu(float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta);
+
+void fast_mean_delta_gpu(float *delta, float *variance, int batch, int filters, int spatial, float *mean_delta);
+void fast_variance_delta_gpu(float *x, float *delta, float *mean, float *variance, int batch, int filters, int spatial, float *variance_delta);
+
+void fast_variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
+void fast_mean_gpu(float *x, int batch, int filters, int spatial, float *mean);
+void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float s1, float s2, float *out);
+void scale_bias_gpu(float *output, float *biases, int batch, int n, int size);
+void backward_scale_gpu(float *x_norm, float *delta, int batch, int n, int size, float *scale_updates);
+void scale_bias_gpu(float *output, float *biases, int batch, int n, int size);
+void add_bias_gpu(float *output, float *biases, int batch, int n, int size);
+void backward_bias_gpu(float *bias_updates, float *delta, int batch, int n, int size);
+
+void logistic_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error);
+void softmax_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error);
+void smooth_l1_gpu(int n, float *pred, float *truth, float *delta, float *error);
+void l2_gpu(int n, float *pred, float *truth, float *delta, float *error);
+void l1_gpu(int n, float *pred, float *truth, float *delta, float *error);
+void wgan_gpu(int n, float *pred, float *truth, float *delta, float *error);
+void weighted_delta_gpu(float *a, float *b, float *s, float *da, float *db, float *ds, int num, float *dc);
+void weighted_sum_gpu(float *a, float *b, float *s, int num, float *c);
+void mult_add_into_gpu(int num, float *a, float *b, float *c);
+void inter_gpu(int NX, float *X, int NY, float *Y, int B, float *OUT);
+void deinter_gpu(int NX, float *X, int NY, float *Y, int B, float *OUT);
+
+void reorg_gpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out);
+
+void softmax_gpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
+void adam_update_gpu(float *w, float *d, float *m, float *v, float B1, float B2, float eps, float decay, float rate, int n, int batch, int t);
+void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t);
+
+void flatten_gpu(float *x, int spatial, int layers, int batch, int forward, float *out);
+void softmax_tree(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
+void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out);
+
+#endif
+#endif
+
+
+//box.h
+#ifndef BOX_H
+#define BOX_H
+#include "darknet.h"
+
+typedef struct {
+	float dx, dy, dw, dh;
+} dbox;
+
+float box_rmse(box a, box b);
+dbox diou(box a, box b);
+box decode_box(box b, box anchor);
+box encode_box(box b, box anchor);
+
+#endif
+
+
+
+
+//col2im.h
+#ifndef COL2IM_H
+#define COL2IM_H
+
+void col2im_cpu(float* data_col,
+	int channels, int height, int width,
+	int ksize, int stride, int pad, float* data_im);
+
+#ifdef GPU
+void col2im_gpu(float *data_col,
+	int channels, int height, int width,
+	int ksize, int stride, int pad, float *data_im);
+#endif
+#endif
+
+
+
+//cuda.h
+#ifndef CUDA_H
+#define CUDA_H
+
+#include "darknet.h"
+
+#ifdef GPU
+
+void check_error(cudaError_t status);
+cublasHandle_t blas_handle();
+int *cuda_make_int_array(int *x, size_t n);
+void cuda_random(float *x_gpu, size_t n);
+float cuda_compare(float *x_gpu, float *x, size_t n, char *s);
+dim3 cuda_gridsize(size_t n);
+
+#ifdef CUDNN
+cudnnHandle_t cudnn_handle();
+#endif
+
+#endif
+#endif
+
+
+//data.h
+#ifndef DATA_H
+#define DATA_H
+#include <pthread.h>
+
+#include "darknet.h"
+#include "matrix.h"
+#include "list.h"
+#include "image.h"
+#include "tree.h"
+
+static inline float distance_from_edge(int x, int max)
+{
+	int dx = (max / 2) - x;
+	if (dx < 0) dx = -dx;
+	dx = (max / 2) + 1 - dx;
+	dx *= 2;
+	float dist = (float)dx / max;
+	if (dist > 1) dist = 1;
+	return dist;
+}
+void load_data_blocking(load_args args);
+
+
+void print_letters(float *pred, int n);
+data load_data_captcha(char **paths, int n, int m, int k, int w, int h);
+data load_data_captcha_encode(char **paths, int n, int m, int w, int h);
+data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter, float hue, float saturation, float exposure);
+data load_data_tag(char **paths, int n, int m, int k, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure);
+matrix load_image_augment_paths(char **paths, int n, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center);
+data load_data_super(char **paths, int n, int m, int w, int h, int scale);
+data load_data_augment(char **paths, int n, int m, char **labels, int k, tree *hierarchy, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure, int center);
+data load_data_regression(char **paths, int n, int m, int classes, int min, int max, int size, float angle, float aspect, float hue, float saturation, float exposure);
+data load_go(char *filename);
+
+
+data load_data_writing(char **paths, int n, int m, int w, int h, int out_w, int out_h);
+
+void get_random_batch(data d, int n, float *X, float *y);
+data get_data_part(data d, int part, int total);
+data get_random_data(data d, int num);
+data load_categorical_data_csv(char *filename, int target, int k);
+void normalize_data_rows(data d);
+void scale_data_rows(data d, float s);
+void translate_data_rows(data d, float s);
+void randomize_data(data d);
+data *split_data(data d, int part, int total);
+data concat_datas(data *d, int n);
+void fill_truth(char *path, char **labels, int k, float *truth);
+
+#endif
+
+
+//demo.h
+#ifndef DEMO_H
+#define DEMO_H
+
+#include "image.h"
+
+#endif
+
+
+//gemm.h
+#ifndef GEMM_H
+#define GEMM_H
+
+void gemm_bin(int M, int N, int K, float ALPHA,
+	char  *A, int lda,
+	float *B, int ldb,
+	float *C, int ldc);
+
+void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
+	float *A, int lda,
+	float *B, int ldb,
+	float BETA,
+	float *C, int ldc);
+
+void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
+	float *A, int lda,
+	float *B, int ldb,
+	float BETA,
+	float *C, int ldc);
+
+#ifdef GPU
+void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
+	float *A_gpu, int lda,
+	float *B_gpu, int ldb,
+	float BETA,
+	float *C_gpu, int ldc);
+
+void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
+	float *A, int lda,
+	float *B, int ldb,
+	float BETA,
+	float *C, int ldc);
+#endif
+#endif
+
+
+//im2col.h
+#ifndef IM2COL_H
+#define IM2COL_H
+
+void im2col_cpu(float* data_im,
+	int channels, int height, int width,
+	int ksize, int stride, int pad, float* data_col);
+
+#ifdef GPU
+
+void im2col_gpu(float *im,
+	int channels, int height, int width,
+	int ksize, int stride, int pad, float *data_col);
+
+#endif
+#endif
+
+
+//image.h
+#ifndef IMAGE_H
+#define IMAGE_H
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <float.h>
+#include <string.h>
+#include <math.h>
+#include "box.h"
+#include "darknet.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef OPENCV
+	void *open_video_stream(const char *f, int c, int w, int h, int fps);
+	image get_image_from_stream(void *p);
+	image load_image_cv(char *filename, int channels);
+	int show_image_cv(image im, const char* name, int ms);
+#endif
+
+	float get_color(int c, int x, int max);
+	void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b);
+	void draw_bbox(image a, box bbox, int w, float r, float g, float b);
+	void write_label(image a, int r, int c, image *characters, char *string, float *rgb);
+	image image_distance(image a, image b);
+	void scale_image(image m, float s);
+	image rotate_crop_image(image im, float rad, float s, int w, int h, float dx, float dy, float aspect);
+	image random_crop_image(image im, int w, int h);
+	image random_augment_image(image im, float angle, float aspect, int low, int high, int w, int h);
+	augment_args random_augment_args(image im, float angle, float aspect, int low, int high, int w, int h);
+	void letterbox_image_into(image im, int w, int h, image boxed);
+	image resize_max(image im, int max);
+	void translate_image(image m, float s);
+	void embed_image(image source, image dest, int dx, int dy);
+	void place_image(image im, int w, int h, int dx, int dy, image canvas);
+	void saturate_image(image im, float sat);
+	void exposure_image(image im, float sat);
+	void distort_image(image im, float hue, float sat, float val);
+	void saturate_exposure_image(image im, float sat, float exposure);
+	void rgb_to_hsv(image im);
+	void hsv_to_rgb(image im);
+	void yuv_to_rgb(image im);
+	void rgb_to_yuv(image im);
+
+
+	image collapse_image_layers(image source, int border);
+	image collapse_images_horz(image *ims, int n);
+	image collapse_images_vert(image *ims, int n);
+
+	void show_image_normalized(image im, const char *name);
+	void show_images(image *ims, int n, char *window);
+	void show_image_layers(image p, char *name);
+	void show_image_collapsed(image p, char *name);
+
+	void print_image(image m);
+
+	image make_empty_image(int w, int h, int c);
+	void copy_image_into(image src, image dest);
+
+	image get_image_layer(image m, int l);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
+
+
+//layer.h
+#include "darknet.h"
+
+
+
 //list.h
 #ifndef LIST_H
 #define LIST_H
+#include "darknet.h"
+
 list *make_list();
-void *list_pop(list *l);
-void list_insert(list *l, void *val);
-void free_node(node *n);
-void free_list(list *l);
+int list_find(list *l, void *val);
+
+void list_insert(list *, void *);
+
+
 void free_list_contents(list *l);
-void **list_to_array(list *l);
+
 #endif
+
+
+//matrix.h
+#ifndef MATRIX_H
+#define MATRIX_H
+#include "darknet.h"
+
+matrix copy_matrix(matrix m);
+void print_matrix(matrix m);
+
+matrix hold_out_matrix(matrix *m, int n);
+matrix resize_matrix(matrix m, int size);
+
+float *pop_column(matrix *m, int c);
+
+#endif
+
+
+//network.h
+// Oh boy, why am I about to do this....
+#ifndef NETWORK_H
+#define NETWORK_H
+#include "darknet.h"
+
+#include "image.h"
+#include "layer.h"
+#include "data.h"
+#include "tree.h"
+
+
+#ifdef GPU
+void pull_network_output(network *net);
+#endif
+
+void compare_networks(network *n1, network *n2, data d);
+char *get_layer_string(LAYER_TYPE a);
+
+network *make_network(int n);
+
+
+float network_accuracy_multi(network *net, data d, int n);
+int get_predicted_class_network(network *net);
+void print_network(network *net);
+int resize_network(network *net, int w, int h);
+void calc_network_cost(network *net);
+
+#endif
+
+
 
 //option_list.h
 #ifndef OPTION_LIST_H
 #define OPTION_LIST_H
+#include "list.h"
+
 typedef struct {
 	char *key;
 	char *val;
 	int used;
 } kvp;
 
-list *read_data_cfg(char *filename);
+
 int read_option(char *s, list *options);
-void option_insert(list *l, const char *key, const char *val);
+void option_insert(list *l, char *key, char *val);
+char *option_find(list *l, char *key);
+float option_find_float(list *l, char *key, float def);
+float option_find_float_quiet(list *l, char *key, float def);
 void option_unused(list *l);
-char *option_find(list *l, const char *key);
-const char *option_find_str(list *l, const char *key, const char *def);
-int option_find_int(list *l, const char *key, int def);
-int option_find_int_quiet(list *l, const char *key, int def);
-float option_find_float(list *l, const char *key, float def);
-float option_find_float_quiet(list *l, const char *key, float def);
+
 #endif
+
+
+//parser.h
+#ifndef PARSER_H
+#define PARSER_H
+#include "darknet.h"
+#include "network.h"
+
+void save_network(network net, char *filename);
+void save_weights_double(network net, char *filename);
+
+#endif
+
+//tree.h
+#ifndef TREE_H
+#define TREE_H
+#include "darknet.h"
+
+int hierarchy_top_prediction(float *predictions, tree *hier, float thresh, int stride);
+float get_hierarchy_probability(float *x, tree *hier, int c, int stride);
+
+#endif
+
 
 //utils.h
 #ifndef UTILS_H
 #define UTILS_H
+#include <stdio.h>
+#include <time.h>
+#include "darknet.h"
+#include "list.h"
+
+#define TIME(a) \
+    do { \
+    double start = what_time_is_it_now(); \
+    a; \
+    printf("%s took: %f seconds\n", #a, what_time_is_it_now() - start); \
+    } while (0)
 
 #define TWO_PI 6.2831853071795864769252866f
 
-int *read_intlist(char *gpu_list, int *ngpus, int d);
-int *read_map(char *filename);
-int *random_index_order(int min, int max);
-void del_arg(int argc, char **argv, int index);
-int find_arg(int argc, char* argv[], char *arg);
-int find_int_arg(int argc, char **argv, char *arg, int def);
-float find_float_arg(int argc, char **argv, char *arg, float def);
-char *find_char_arg(int argc, char **argv, char *arg, char *def);
-char *basecfg(char *cfgfile);
+double what_time_is_it_now();
+void shuffle(void *arr, size_t n, size_t size);
+void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections);
+void free_ptrs(void **ptrs, int n);
 int alphanum_to_int(char c);
 char int_to_alphanum(int i);
-void pm(int M, int N, float *A);
+int read_int(int fd);
+void write_int(int fd, int n);
+void read_all(int fd, char *buffer, size_t bytes);
+void write_all(int fd, char *buffer, size_t bytes);
+int read_all_fail(int fd, char *buffer, size_t bytes);
+int write_all_fail(int fd, char *buffer, size_t bytes);
 void find_replace(char *str, char *orig, char *rep, char *output);
-float sec(clock_t clocks);
-void top_k(float *a, int n, int k, int *index);
-void error(const char *s);
-unsigned char *read_file(char *filename);
 void malloc_error();
 void file_error(char *s);
-list *split_str(char *s, char delim);
 void strip(char *s);
 void strip_char(char *s, char bad);
-void free_ptrs(void **ptrs, int n);
+list *split_str(char *s, char delim);
 char *fgetl(FILE *fp);
-char *copy_string(char *s);
 list *parse_csv_line(char *line);
+char *copy_string(char *s);
 int count_fields(char *line);
 float *parse_fields(char *line, int n);
-float sum_array(float *a, int n);
-float mean_array(float *a, int n);
-void mean_arrays(float **a, int n, int els, float *avg);
-void print_statistics(float *a, int n);
-float variance_array(float *a, int n);
-int constrain_int(int a, int min, int max);
-float constrain(float min, float max, float a);
-float dist_array(float *a, float *b, int n, int sub);
-float mse_array(float *a, int n);
-void normalize_array(float *a, int n);
 void translate_array(float *a, int n, float s);
-float mag_array(float *a, int n);
-void scale_array(float *a, int n, float s);
-int sample_array(float *a, int n);
-int max_int_index(int *a, int n);
-int max_index(float *a, int n);
-int int_index(int *a, int val, int n);
-int rand_int(int min, int max);
-float rand_normal();
-size_t rand_size_t();
-float rand_uniform(float min, float max);
+float constrain(float min, float max, float a);
+int constrain_int(int a, int min, int max);
 float rand_scale(float s);
+int rand_int(int min, int max);
+void mean_arrays(float **a, int n, int els, float *avg);
+float dist_array(float *a, float *b, int n, int sub);
 float **one_hot_encode(float *a, int n, int k);
+float sec(clock_t clocks);
+void print_statistics(float *a, int n);
+int int_index(int *a, int val, int n);
+
 #endif
 
-//blas.h
-#ifndef BLAS_H
-#define BLAS_H
-void reorg_cpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out);
-void flatten(float *x, int size, int layers, int batch, int forward);
-void weighted_sum_cpu(float *a, float *b, float *s, int n, float *c);
-void weighted_delta_cpu(float *a, float *b, float *s, float *da, float *db, float *ds, int n, float *dc);
-void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float s1, float s2, float *out);
-void mean_cpu(float *x, int batch, int filters, int spatial, float *mean);
-void variance_cpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
-void l2normalize_cpu(float *x, float *dx, int batch, int filters, int spatial);
-void normalize_cpu(float *x, float *mean, float *variance, int batch, int filters, int spatial);
-void const_cpu(int N, float ALPHA, float *X, int INCX);
-void mul_cpu(int N, float *X, int INCX, float *Y, int INCY);
-void pow_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
-void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
-void scal_cpu(int N, float ALPHA, float *X, int INCX);
-void fill_cpu(int N, float ALPHA, float *X, int INCX);
-void deinter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT);
-void inter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT);
-void copy_cpu(int N, float *X, int INCX, float *Y, int INCY);
-void mult_add_into_cpu(int N, float *X, float *Y, float *Z);
-void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error);
-void l1_cpu(int n, float *pred, float *truth, float *delta, float *error);
-void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
-void logistic_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
-void l2_cpu(int n, float *pred, float *truth, float *delta, float *error);
-float dot_cpu(int N, float *X, int INCX, float *Y, int INCY);
-void softmax(float *input, int n, float temp, int stride, float *output);
-void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, float *output);
-void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out);
-#endif
-
-//paser.h
-#ifndef PARSER_H
-#define PARSER_H
-typedef struct {
-	char *type;
-	list *options;
-}section;
-
-LAYER_TYPE string_to_layer_type(char * type);
-void parse_data(char *data, float *a, int n);
-typedef struct size_params {
-	int batch;
-	int inputs;
-	int h;
-	int w;
-	int c;
-	int index;
-	int time_steps;
-	network *net;
-} size_params;
-
-void parse_net_options(list *options, network *net);
-network *parse_network_cfg(char *filename);
-list *read_cfg(char *filename);
-void transpose_matrix(float *a, int rows, int cols);
-void load_connected_weights(layer l, FILE *fp, int transpose);
-void load_batchnorm_weights(layer l, FILE *fp);
-void load_convolutional_weights_binary(layer l, FILE *fp);
-void load_convolutional_weights(layer l, FILE *fp);
-void load_weights_upto(network *net, char *filename, int start, int cutoff);
-void load_weights(network *net, char *filename);
-#endif
-
-//network.h
-#ifndef NETWORK_H
-#define NETWORK_H
-load_args get_base_args(network *net);
-network *load_network(char *cfg, char *weights, int clear);
-size_t get_current_batch(network *net);
-void reset_network_state(network *net, int b);
-void reset_rnn(network *net);
-float get_current_rate(network *net);
-const char* get_layer_string(LAYER_TYPE a);
-network *make_network(int n);
-void update_network(network *netp);
-void calc_network_cost(network *netp);
-int get_predicted_class_network(network *net);
-void set_temp_network(network *net, float t);
-void set_batch_network(network *net, int b);
-layer get_network_detection_layer(network *net);
-void top_predictions(network *net, int k, int *index);
-void free_detections(detection *dets, int n);
-int network_width(network *net);
-int network_height(network *net);
-void print_network(network *net);
-layer get_network_output_layer(network *net);
-layer network_output_layer(network *net);
-int network_inputs(network *net);
-int network_outputs(network *net);
-float *network_output(network *net);
-const char* get_layer_string(LAYER_TYPE a);
-#endif
 
 
 
