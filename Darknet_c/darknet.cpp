@@ -908,15 +908,6 @@ void validate_compare(char *filename, char *weightfile)
 	}
 }
 
-typedef struct {
-	network net;
-	char *filename;
-	int class_n;
-	int classes;
-	float elo;
-	float *elos;
-} sortable_bbox;
-
 int total_compares = 0;
 int current_class = 0;
 
@@ -3145,12 +3136,6 @@ namespace cv
 
 
 
-
-
-
-
-
-
 //demo.c
 #define DEMO 1
 
@@ -3830,7 +3815,6 @@ int test_gpu_blas()
 
 
 //im2col.c
-#include <stdio.h>
 float im2col_get_pixel(float *im, int height, int width, int channels,
 	int row, int col, int channel, int pad)
 {
@@ -3876,15 +3860,6 @@ void im2col_cpu(float* data_im,
 
 
 //image.c
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-
-int windows = 0;
-
-float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
-
 float get_color(int c, int x, int max)
 {
 	float ratio = ((float)x / max) * 5;
@@ -5150,7 +5125,7 @@ void test_resize(char *filename)
 	show_image(c2, "C2", 1);
 	show_image(c3, "C3", 1);
 	show_image(c4, "C4", 1);
-#ifdef OPENCV
+#ifdef CV_VERSION
 	while (1) {
 		image aug = random_augment_image(im, 0, .75, 320, 448, 320, 320);
 		show_image(aug, "aug", 1);
@@ -5202,8 +5177,8 @@ image load_image_stb(char *filename, int channels)
 
 image load_image(char *filename, int w, int h, int c)
 {
-#ifdef OPENCV
-	image out = load_image_cv(filename, c);
+#ifdef CV_VERSION
+	image out = cv::load_image_cv(filename, c);
 #else
 	image out = load_image_stb(filename, c);
 #endif
@@ -7022,11 +6997,6 @@ float option_find_float(list *l, char *key, float def)
 
 
 //parser.c
-typedef struct {
-	char *type;
-	list *options;
-}section;
-
 list *read_cfg(char *filename);
 
 LAYER_TYPE string_to_layer_type(char * type)
@@ -7103,17 +7073,6 @@ void parse_data(char *data, float *a, int n)
 	}
 }
 
-typedef struct size_params {
-	int batch;
-	int inputs;
-	int h;
-	int w;
-	int c;
-	int index;
-	int time_steps;
-	network *net;
-} size_params;
-
 local_layer parse_local(list *options, size_params params)
 {
 	int n = option_find_int(options, (char*)"filters", 1);
@@ -7159,7 +7118,6 @@ layer parse_deconvolutional(list *options, size_params params)
 
 	return l;
 }
-
 
 convolutional_layer parse_convolutional(list *options, size_params params)
 {
