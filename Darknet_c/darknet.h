@@ -6,6 +6,7 @@
 #include <iostream>
 #include <time.h>
 #include <pthread.h>
+#include "layers.h"
 //#include <sys/time.h>
 
 
@@ -683,7 +684,6 @@ void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int for
 #endif
 #endif
 
-
 //box.h
 #ifndef BOX_H
 #define BOX_H
@@ -1257,6 +1257,7 @@ typedef struct size_params {
 LAYER_TYPE string_to_layer_type(char * type);
 void free_section(section *s);
 void parse_data(char *data, float *a, int n);
+
 local_layer parse_local(list *options, size_params params);
 layer parse_deconvolutional(list *options, size_params params);
 convolutional_layer parse_convolutional(list *options, size_params params);
@@ -1314,7 +1315,6 @@ void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leave
 int hierarchy_top_prediction(float *predictions, tree *hier, float thresh, int stride);
 tree *read_tree(char *filename);
 #endif
-
 
 //utils.h
 #ifndef UTILS_H

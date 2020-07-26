@@ -1,11 +1,10 @@
-#include "layers.h"
-#include <math.h>
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <iostream>
 #include <string>
 #include <string.h>
+#include "darknet.h"
 
 //activation_layer.c
 layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
@@ -571,7 +570,7 @@ void backward_batchnorm_layer_gpu(layer l, network net)
 layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation, int batch_normalize, int adam)
 {
 	int i;
-	layer l = { 0 };
+	layer l = {};
 	l.learning_rate_scale = 1;
 	l.type = CONNECTED;
 
@@ -586,14 +585,14 @@ layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activa
 	l.out_w = 1;
 	l.out_c = outputs;
 
-	l.output = calloc(batch*outputs, sizeof(float));
-	l.delta = calloc(batch*outputs, sizeof(float));
+	l.output = (float*)calloc(batch*outputs, sizeof(float));
+	l.delta = (float*)calloc(batch*outputs, sizeof(float));
 
-	l.weight_updates = calloc(inputs*outputs, sizeof(float));
-	l.bias_updates = calloc(outputs, sizeof(float));
+	l.weight_updates = (float*)calloc(inputs*outputs, sizeof(float));
+	l.bias_updates = (float*)calloc(outputs, sizeof(float));
 
-	l.weights = calloc(outputs*inputs, sizeof(float));
-	l.biases = calloc(outputs, sizeof(float));
+	l.weights = (float*)calloc(outputs*inputs, sizeof(float));
+	l.biases = (float*)calloc(outputs, sizeof(float));
 
 	l.forward = forward_connected_layer;
 	l.backward = backward_connected_layer;
@@ -610,30 +609,30 @@ layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activa
 	}
 
 	if (adam) {
-		l.m = calloc(l.inputs*l.outputs, sizeof(float));
-		l.v = calloc(l.inputs*l.outputs, sizeof(float));
-		l.bias_m = calloc(l.outputs, sizeof(float));
-		l.scale_m = calloc(l.outputs, sizeof(float));
-		l.bias_v = calloc(l.outputs, sizeof(float));
-		l.scale_v = calloc(l.outputs, sizeof(float));
+		l.m = (float*)calloc(l.inputs*l.outputs, sizeof(float));
+		l.v = (float*)calloc(l.inputs*l.outputs, sizeof(float));
+		l.bias_m = (float*)calloc(l.outputs, sizeof(float));
+		l.scale_m = (float*)calloc(l.outputs, sizeof(float));
+		l.bias_v = (float*)calloc(l.outputs, sizeof(float));
+		l.scale_v = (float*)calloc(l.outputs, sizeof(float));
 	}
 	if (batch_normalize) {
-		l.scales = calloc(outputs, sizeof(float));
-		l.scale_updates = calloc(outputs, sizeof(float));
+		l.scales = (float*)calloc(outputs, sizeof(float));
+		l.scale_updates = (float*)calloc(outputs, sizeof(float));
 		for (i = 0; i < outputs; ++i) {
 			l.scales[i] = 1;
 		}
 
-		l.mean = calloc(outputs, sizeof(float));
-		l.mean_delta = calloc(outputs, sizeof(float));
-		l.variance = calloc(outputs, sizeof(float));
-		l.variance_delta = calloc(outputs, sizeof(float));
+		l.mean = (float*)calloc(outputs, sizeof(float));
+		l.mean_delta = (float*)calloc(outputs, sizeof(float));
+		l.variance = (float*)calloc(outputs, sizeof(float));
+		l.variance_delta = (float*)calloc(outputs, sizeof(float));
 
-		l.rolling_mean = calloc(outputs, sizeof(float));
-		l.rolling_variance = calloc(outputs, sizeof(float));
+		l.rolling_mean = (float*)calloc(outputs, sizeof(float));
+		l.rolling_variance = (float*)calloc(outputs, sizeof(float));
 
-		l.x = calloc(batch*outputs, sizeof(float));
-		l.x_norm = calloc(batch*outputs, sizeof(float));
+		l.x = (float*)calloc(batch*outputs, sizeof(float));
+		l.x_norm = (float*)calloc(batch*outputs, sizeof(float));
 	}
 
 #ifdef GPU
@@ -904,16 +903,6 @@ void backward_connected_layer_gpu(layer l, network net)
 
 
 //convolutinal_layer.c
-#include "convolutional_layer.h"
-#include "utils.h"
-#include "batchnorm_layer.h"
-#include "im2col.h"
-#include "col2im.h"
-#include "blas.h"
-#include "gemm.h"
-#include <stdio.h>
-#include <time.h>
-
 #ifdef AI2
 #include "xnor_layer.h"
 #endif
@@ -1082,7 +1071,7 @@ void cudnn_convolutional_setup(layer *l)
 convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int groups, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam)
 {
 	int i;
-	convolutional_layer l = { 0 };
+	convolutional_layer l = {};
 	l.type = CONVOLUTIONAL;
 
 	l.groups = groups;
@@ -1098,11 +1087,11 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 	l.pad = padding;
 	l.batch_normalize = batch_normalize;
 
-	l.weights = calloc(c / groups * n*size*size, sizeof(float));
-	l.weight_updates = calloc(c / groups * n*size*size, sizeof(float));
+	l.weights = (float*)calloc(c / groups * n*size*size, sizeof(float));
+	l.weight_updates = (float*)calloc(c / groups * n*size*size, sizeof(float));
 
-	l.biases = calloc(n, sizeof(float));
-	l.bias_updates = calloc(n, sizeof(float));
+	l.biases = (float*)calloc(n, sizeof(float));
+	l.bias_updates = (float*)calloc(n, sizeof(float));
 
 	l.nweights = c / groups * n*size*size;
 	l.nbiases = n;
@@ -1121,47 +1110,47 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 	l.outputs = l.out_h * l.out_w * l.out_c;
 	l.inputs = l.w * l.h * l.c;
 
-	l.output = calloc(l.batch*l.outputs, sizeof(float));
-	l.delta = calloc(l.batch*l.outputs, sizeof(float));
+	l.output = (float*)calloc(l.batch*l.outputs, sizeof(float));
+	l.delta = (float*)calloc(l.batch*l.outputs, sizeof(float));
 
 	l.forward = forward_convolutional_layer;
 	l.backward = backward_convolutional_layer;
 	l.update = update_convolutional_layer;
 	if (binary) {
-		l.binary_weights = calloc(l.nweights, sizeof(float));
-		l.cweights = calloc(l.nweights, sizeof(char));
-		l.scales = calloc(n, sizeof(float));
+		l.binary_weights = (float*)calloc(l.nweights, sizeof(float));
+		l.cweights = (char*)calloc(l.nweights, sizeof(char));
+		l.scales = (float*)calloc(n, sizeof(float));
 	}
 	if (xnor) {
-		l.binary_weights = calloc(l.nweights, sizeof(float));
-		l.binary_input = calloc(l.inputs*l.batch, sizeof(float));
+		l.binary_weights = (float*)calloc(l.nweights, sizeof(float));
+		l.binary_input = (float*)calloc(l.inputs*l.batch, sizeof(float));
 	}
 
 	if (batch_normalize) {
-		l.scales = calloc(n, sizeof(float));
-		l.scale_updates = calloc(n, sizeof(float));
+		l.scales = (float*)calloc(n, sizeof(float));
+		l.scale_updates = (float*)calloc(n, sizeof(float));
 		for (i = 0; i < n; ++i) {
 			l.scales[i] = 1;
 		}
 
-		l.mean = calloc(n, sizeof(float));
-		l.variance = calloc(n, sizeof(float));
+		l.mean = (float*)calloc(n, sizeof(float));
+		l.variance = (float*)calloc(n, sizeof(float));
 
-		l.mean_delta = calloc(n, sizeof(float));
-		l.variance_delta = calloc(n, sizeof(float));
+		l.mean_delta = (float*)calloc(n, sizeof(float));
+		l.variance_delta = (float*)calloc(n, sizeof(float));
 
-		l.rolling_mean = calloc(n, sizeof(float));
-		l.rolling_variance = calloc(n, sizeof(float));
-		l.x = calloc(l.batch*l.outputs, sizeof(float));
-		l.x_norm = calloc(l.batch*l.outputs, sizeof(float));
+		l.rolling_mean = (float*)calloc(n, sizeof(float));
+		l.rolling_variance = (float*)calloc(n, sizeof(float));
+		l.x = (float*)calloc(l.batch*l.outputs, sizeof(float));
+		l.x_norm = (float*)calloc(l.batch*l.outputs, sizeof(float));
 	}
 	if (adam) {
-		l.m = calloc(l.nweights, sizeof(float));
-		l.v = calloc(l.nweights, sizeof(float));
-		l.bias_m = calloc(n, sizeof(float));
-		l.scale_m = calloc(n, sizeof(float));
-		l.bias_v = calloc(n, sizeof(float));
-		l.scale_v = calloc(n, sizeof(float));
+		l.m = (float*)calloc(l.nweights, sizeof(float));
+		l.v = (float*)calloc(l.nweights, sizeof(float));
+		l.bias_m = (float*)calloc(n, sizeof(float));
+		l.scale_m = (float*)calloc(n, sizeof(float));
+		l.bias_v = (float*)calloc(n, sizeof(float));
+		l.scale_v = (float*)calloc(n, sizeof(float));
 	}
 
 #ifdef GPU
@@ -1286,11 +1275,11 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 	l->outputs = l->out_h * l->out_w * l->out_c;
 	l->inputs = l->w * l->h * l->c;
 
-	l->output = realloc(l->output, l->batch*l->outputs * sizeof(float));
-	l->delta = realloc(l->delta, l->batch*l->outputs * sizeof(float));
+	l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
+	l->delta = (float*)realloc(l->delta, l->batch*l->outputs * sizeof(float));
 	if (l->batch_normalize) {
-		l->x = realloc(l->x, l->batch*l->outputs * sizeof(float));
-		l->x_norm = realloc(l->x_norm, l->batch*l->outputs * sizeof(float));
+		l->x = (float*)realloc(l->x, l->batch*l->outputs * sizeof(float));
+		l->x_norm = (float*)realloc(l->x_norm, l->batch*l->outputs * sizeof(float));
 	}
 
 #ifdef GPU
@@ -1500,7 +1489,7 @@ void rescale_weights(convolutional_layer l, float scale, float trans)
 
 image *get_weights(convolutional_layer l)
 {
-	image *weights = calloc(l.n, sizeof(image));
+	image *weights = (image*)calloc(l.n, sizeof(image));
 	int i;
 	for (i = 0; i < l.n; ++i) {
 		weights[i] = copy_image(get_convolutional_weight(l, i));
@@ -1534,15 +1523,6 @@ image *visualize_convolutional_layer(convolutional_layer l, char *window, image 
 
 
 //cost_layer.c
-#include "cost_layer.h"
-#include "utils.h"
-#include "cuda.h"
-#include "blas.h"
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
 COST_TYPE get_cost_type(char *s)
 {
 	if (strcmp(s, "seg") == 0) return SEG;
@@ -1559,19 +1539,19 @@ char *get_cost_string(COST_TYPE a)
 {
 	switch (a) {
 	case SEG:
-		return "seg";
+		return (char*)"seg";
 	case SSE:
-		return "sse";
+		return (char*)"sse";
 	case MASKED:
-		return "masked";
+		return (char*)"masked";
 	case SMOOTH:
-		return "smooth";
+		return (char*)"smooth";
 	case L1:
-		return "L1";
+		return (char*)"L1";
 	case WGAN:
-		return "wgan";
+		return (char*)"wgan";
 	}
-	return "sse";
+	return (char*)"sse";
 }
 
 cost_layer make_cost_layer(int batch, int inputs, COST_TYPE cost_type, float scale)
@@ -1585,9 +1565,9 @@ cost_layer make_cost_layer(int batch, int inputs, COST_TYPE cost_type, float sca
 	l.inputs = inputs;
 	l.outputs = inputs;
 	l.cost_type = cost_type;
-	l.delta = calloc(inputs*batch, sizeof(float));
-	l.output = calloc(inputs*batch, sizeof(float));
-	l.cost = calloc(1, sizeof(float));
+	l.delta = (float*)calloc(inputs*batch, sizeof(float));
+	l.output = (float*)calloc(inputs*batch, sizeof(float));
+	l.cost = (float*)calloc(1, sizeof(float));
 
 	l.forward = forward_cost_layer;
 	l.backward = backward_cost_layer;
@@ -1605,8 +1585,8 @@ void resize_cost_layer(cost_layer *l, int inputs)
 {
 	l->inputs = inputs;
 	l->outputs = inputs;
-	l->delta = realloc(l->delta, inputs*l->batch * sizeof(float));
-	l->output = realloc(l->output, inputs*l->batch * sizeof(float));
+	l->delta = (float*)realloc(l->delta, inputs*l->batch * sizeof(float));
+	l->output = (float*)realloc(l->output, inputs*l->batch * sizeof(float));
 #ifdef GPU
 	cuda_free(l->delta_gpu);
 	cuda_free(l->output_gpu);
@@ -1723,18 +1703,6 @@ void backward_cost_layer_gpu(const cost_layer l, network net)
 
 
 //crnn_layer.c
-#include "crnn_layer.h"
-#include "convolutional_layer.h"
-#include "utils.h"
-#include "cuda.h"
-#include "blas.h"
-#include "gemm.h"
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 static void increment_layer(layer *l, int steps)
 {
 	int num = l->outputs*l->batch*steps;
@@ -1755,7 +1723,7 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
 {
 	fprintf(stderr, "CRNN Layer: %d x %d x %d image, %d filters\n", h, w, c, output_filters);
 	batch = batch / steps;
-	layer l = { 0 };
+	layer l = { };
 	l.batch = batch;
 	l.type = CRNN;
 	l.steps = steps;
@@ -1769,19 +1737,19 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
 	l.hidden = h * w * hidden_filters;
 	l.outputs = l.out_h * l.out_w * l.out_c;
 
-	l.state = calloc(l.hidden*batch*(steps + 1), sizeof(float));
+	l.state = (float*)calloc(l.hidden*batch*(steps + 1), sizeof(float));
 
-	l.input_layer = malloc(sizeof(layer));
+	l.input_layer = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.input_layer) = make_convolutional_layer(batch*steps, h, w, c, hidden_filters, 1, 3, 1, 1, activation, batch_normalize, 0, 0, 0);
 	l.input_layer->batch = batch;
 
-	l.self_layer = malloc(sizeof(layer));
+	l.self_layer = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.self_layer) = make_convolutional_layer(batch*steps, h, w, hidden_filters, hidden_filters, 1, 3, 1, 1, activation, batch_normalize, 0, 0, 0);
 	l.self_layer->batch = batch;
 
-	l.output_layer = malloc(sizeof(layer));
+	l.output_layer = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.output_layer) = make_convolutional_layer(batch*steps, h, w, hidden_filters, output_filters, 1, 3, 1, 1, activation, batch_normalize, 0, 0, 0);
 	l.output_layer->batch = batch;
@@ -2017,10 +1985,6 @@ void backward_crnn_layer_gpu(layer l, network net)
 
 
 //crop_layer.c
-#include "crop_layer.h"
-#include "cuda.h"
-#include <stdio.h>
-
 image get_crop_image(crop_layer l)
 {
 	int h = l.out_h;
@@ -2051,7 +2015,7 @@ crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int 
 	l.out_c = c;
 	l.inputs = l.w * l.h * l.c;
 	l.outputs = l.out_w * l.out_h * l.out_c;
-	l.output = calloc(l.outputs*batch, sizeof(float));
+	l.output = (float*)calloc(l.outputs*batch, sizeof(float));
 	l.forward = forward_crop_layer;
 	l.backward = backward_crop_layer;
 
@@ -2075,7 +2039,7 @@ void resize_crop_layer(layer *l, int w, int h)
 	l->inputs = l->w * l->h * l->c;
 	l->outputs = l->out_h * l->out_w * l->out_c;
 
-	l->output = realloc(l->output, l->batch*l->outputs * sizeof(float));
+	l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
 #ifdef GPU
 	cuda_free(l->output_gpu);
 	l->output_gpu = cuda_make_array(l->output, l->outputs*l->batch);
@@ -2132,19 +2096,6 @@ void forward_crop_layer(const crop_layer l, network net)
 
 
 //deconvolutional_layer.c
-#include "deconvolutional_layer.h"
-#include "convolutional_layer.h"
-#include "batchnorm_layer.h"
-#include "utils.h"
-#include "im2col.h"
-#include "col2im.h"
-#include "blas.h"
-#include "gemm.h"
-
-#include <stdio.h>
-#include <time.h>
-
-
 static size_t get_workspace_size(layer l) {
 	return (size_t)l.h*l.w*l.size*l.size*l.n * sizeof(float);
 }
@@ -2169,7 +2120,7 @@ void bilinear_init(layer l)
 layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int adam)
 {
 	int i;
-	layer l = { 0 };
+	layer l = {};
 	l.type = DECONVOLUTIONAL;
 
 	l.h = h;
@@ -2183,11 +2134,11 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
 	l.nweights = c * n*size*size;
 	l.nbiases = n;
 
-	l.weights = calloc(c*n*size*size, sizeof(float));
-	l.weight_updates = calloc(c*n*size*size, sizeof(float));
+	l.weights = (float*)calloc(c*n*size*size, sizeof(float));
+	l.weight_updates = (float*)calloc(c*n*size*size, sizeof(float));
 
-	l.biases = calloc(n, sizeof(float));
-	l.bias_updates = calloc(n, sizeof(float));
+	l.biases = (float*)calloc(n, sizeof(float));
+	l.bias_updates = (float*)calloc(n, sizeof(float));
 	//float scale = n/(size*size*c);
 	//printf("scale: %f\n", scale);
 	float scale = .02;
@@ -2206,8 +2157,8 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
 
 	scal_cpu(l.nweights, (float)l.out_w*l.out_h / (l.w*l.h), l.weights, 1);
 
-	l.output = calloc(l.batch*l.outputs, sizeof(float));
-	l.delta = calloc(l.batch*l.outputs, sizeof(float));
+	l.output = (float*)calloc(l.batch*l.outputs, sizeof(float));
+	l.delta = (float*)calloc(l.batch*l.outputs, sizeof(float));
 
 	l.forward = forward_deconvolutional_layer;
 	l.backward = backward_deconvolutional_layer;
@@ -2216,30 +2167,30 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
 	l.batch_normalize = batch_normalize;
 
 	if (batch_normalize) {
-		l.scales = calloc(n, sizeof(float));
-		l.scale_updates = calloc(n, sizeof(float));
+		l.scales = (float*)calloc(n, sizeof(float));
+		l.scale_updates = (float*)calloc(n, sizeof(float));
 		for (i = 0; i < n; ++i) {
 			l.scales[i] = 1;
 		}
 
-		l.mean = calloc(n, sizeof(float));
-		l.variance = calloc(n, sizeof(float));
+		l.mean = (float*)calloc(n, sizeof(float));
+		l.variance = (float*)calloc(n, sizeof(float));
 
-		l.mean_delta = calloc(n, sizeof(float));
-		l.variance_delta = calloc(n, sizeof(float));
+		l.mean_delta = (float*)calloc(n, sizeof(float));
+		l.variance_delta = (float*)calloc(n, sizeof(float));
 
-		l.rolling_mean = calloc(n, sizeof(float));
-		l.rolling_variance = calloc(n, sizeof(float));
-		l.x = calloc(l.batch*l.outputs, sizeof(float));
-		l.x_norm = calloc(l.batch*l.outputs, sizeof(float));
+		l.rolling_mean = (float*)calloc(n, sizeof(float));
+		l.rolling_variance = (float*)calloc(n, sizeof(float));
+		l.x = (float*)calloc(l.batch*l.outputs, sizeof(float));
+		l.x_norm = (float*)calloc(l.batch*l.outputs, sizeof(float));
 	}
 	if (adam) {
-		l.m = calloc(c*n*size*size, sizeof(float));
-		l.v = calloc(c*n*size*size, sizeof(float));
-		l.bias_m = calloc(n, sizeof(float));
-		l.scale_m = calloc(n, sizeof(float));
-		l.bias_v = calloc(n, sizeof(float));
-		l.scale_v = calloc(n, sizeof(float));
+		l.m = (float*)calloc(c*n*size*size, sizeof(float));
+		l.v = (float*)calloc(c*n*size*size, sizeof(float));
+		l.bias_m = (float*)calloc(n, sizeof(float));
+		l.scale_m = (float*)calloc(n, sizeof(float));
+		l.bias_v = (float*)calloc(n, sizeof(float));
+		l.scale_v = (float*)calloc(n, sizeof(float));
 	}
 
 #ifdef GPU
@@ -2324,11 +2275,11 @@ void resize_deconvolutional_layer(layer *l, int h, int w)
 	l->outputs = l->out_h * l->out_w * l->out_c;
 	l->inputs = l->w * l->h * l->c;
 
-	l->output = realloc(l->output, l->batch*l->outputs * sizeof(float));
-	l->delta = realloc(l->delta, l->batch*l->outputs * sizeof(float));
+	l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
+	l->delta = (float*)realloc(l->delta, l->batch*l->outputs * sizeof(float));
 	if (l->batch_normalize) {
-		l->x = realloc(l->x, l->batch*l->outputs * sizeof(float));
-		l->x_norm = realloc(l->x_norm, l->batch*l->outputs * sizeof(float));
+		l->x = (float*)realloc(l->x, l->batch*l->outputs * sizeof(float));
+		l->x_norm = (float*)realloc(l->x_norm, l->batch*l->outputs * sizeof(float));
 	}
 
 #ifdef GPU
@@ -2455,22 +2406,9 @@ void update_deconvolutional_layer(layer l, update_args a)
 
 
 //detection_layer.c
-#include "detection_layer.h"
-#include "activations.h"
-#include "softmax_layer.h"
-#include "blas.h"
-#include "box.h"
-#include "cuda.h"
-#include "utils.h"
-
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-
 detection_layer make_detection_layer(int batch, int inputs, int n, int side, int classes, int coords, int rescore)
 {
-	detection_layer l = { 0 };
+	detection_layer l = { };
 	l.type = DETECTION;
 
 	l.n = n;
@@ -2483,11 +2421,11 @@ detection_layer make_detection_layer(int batch, int inputs, int n, int side, int
 	l.w = side;
 	l.h = side;
 	assert(side*side*((1 + l.coords)*l.n + l.classes) == inputs);
-	l.cost = calloc(1, sizeof(float));
+	l.cost = (float*)calloc(1, sizeof(float));
 	l.outputs = l.inputs;
 	l.truths = l.side*l.side*(1 + l.coords + l.classes);
-	l.output = calloc(batch*l.outputs, sizeof(float));
-	l.delta = calloc(batch*l.outputs, sizeof(float));
+	l.output = (float*)calloc(batch*l.outputs, sizeof(float));
+	l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
 
 	l.forward = forward_detection_layer;
 	l.backward = backward_detection_layer;
@@ -2642,7 +2580,7 @@ void forward_detection_layer(const detection_layer l, network net)
 		}
 
 		if (0) {
-			float *costs = calloc(l.batch*locations*l.n, sizeof(float));
+			float *costs = (float*)calloc(l.batch*locations*l.n, sizeof(float));
 			for (b = 0; b < l.batch; ++b) {
 				int index = b * l.inputs;
 				for (i = 0; i < locations; ++i) {
@@ -2740,21 +2678,15 @@ void backward_detection_layer_gpu(detection_layer l, network net)
 
 
 //dropout_layer.c
-#include "dropout_layer.h"
-#include "utils.h"
-#include "cuda.h"
-#include <stdlib.h>
-#include <stdio.h>
-
 dropout_layer make_dropout_layer(int batch, int inputs, float probability)
 {
-	dropout_layer l = { 0 };
+	dropout_layer l = {};
 	l.type = DROPOUT;
 	l.probability = probability;
 	l.inputs = inputs;
 	l.outputs = inputs;
 	l.batch = batch;
-	l.rand = calloc(inputs*batch, sizeof(float));
+	l.rand = (float*)calloc(inputs*batch, sizeof(float));
 	l.scale = 1. / (1. - probability);
 	l.forward = forward_dropout_layer;
 	l.backward = backward_dropout_layer;
@@ -2769,7 +2701,7 @@ dropout_layer make_dropout_layer(int batch, int inputs, float probability)
 
 void resize_dropout_layer(dropout_layer *l, int inputs)
 {
-	l->rand = realloc(l->rand, l->inputs*l->batch * sizeof(float));
+	l->rand = (float*)realloc(l->rand, l->inputs*l->batch * sizeof(float));
 #ifdef GPU
 	cuda_free(l->rand_gpu);
 
@@ -2809,18 +2741,6 @@ void backward_dropout_layer(dropout_layer l, network net)
 
 
 //gru_layer.c
-#include "gru_layer.h"
-#include "connected_layer.h"
-#include "utils.h"
-#include "cuda.h"
-#include "blas.h"
-#include "gemm.h"
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 static void increment_layer(layer *l, int steps)
 {
 	int num = l->outputs*l->batch*steps;
@@ -2841,40 +2761,40 @@ layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_no
 {
 	fprintf(stderr, "GRU Layer: %d inputs, %d outputs\n", inputs, outputs);
 	batch = batch / steps;
-	layer l = { 0 };
+	layer l = { };
 	l.batch = batch;
 	l.type = GRU;
 	l.steps = steps;
 	l.inputs = inputs;
 
-	l.uz = malloc(sizeof(layer));
+	l.uz = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.uz) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
 	l.uz->batch = batch;
 
-	l.wz = malloc(sizeof(layer));
+	l.wz = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.wz) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
 	l.wz->batch = batch;
 
-	l.ur = malloc(sizeof(layer));
+	l.ur = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.ur) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
 	l.ur->batch = batch;
 
-	l.wr = malloc(sizeof(layer));
+	l.wr = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.wr) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
 	l.wr->batch = batch;
 
 
 
-	l.uh = malloc(sizeof(layer));
+	l.uh = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.uh) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
 	l.uh->batch = batch;
 
-	l.wh = malloc(sizeof(layer));
+	l.wh = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.wh) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
 	l.wh->batch = batch;
@@ -2883,16 +2803,16 @@ layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_no
 
 
 	l.outputs = outputs;
-	l.output = calloc(outputs*batch*steps, sizeof(float));
-	l.delta = calloc(outputs*batch*steps, sizeof(float));
-	l.state = calloc(outputs*batch, sizeof(float));
-	l.prev_state = calloc(outputs*batch, sizeof(float));
-	l.forgot_state = calloc(outputs*batch, sizeof(float));
-	l.forgot_delta = calloc(outputs*batch, sizeof(float));
+	l.output = (float*)calloc(outputs*batch*steps, sizeof(float));
+	l.delta = (float*)calloc(outputs*batch*steps, sizeof(float));
+	l.state = (float*)calloc(outputs*batch, sizeof(float));
+	l.prev_state = (float*)calloc(outputs*batch, sizeof(float));
+	l.forgot_state = (float*)calloc(outputs*batch, sizeof(float));
+	l.forgot_delta = (float*)calloc(outputs*batch, sizeof(float));
 
-	l.r_cpu = calloc(outputs*batch, sizeof(float));
-	l.z_cpu = calloc(outputs*batch, sizeof(float));
-	l.h_cpu = calloc(outputs*batch, sizeof(float));
+	l.r_cpu = (float*)calloc(outputs*batch, sizeof(float));
+	l.z_cpu = (float*)calloc(outputs*batch, sizeof(float));
+	l.h_cpu = (float*)calloc(outputs*batch, sizeof(float));
 
 	l.forward = forward_gru_layer;
 	l.backward = backward_gru_layer;
@@ -3228,21 +3148,9 @@ void backward_gru_layer_gpu(layer l, network net)
 
 
 //iseg_layer.c
-#include "iseg_layer.h"
-#include "activations.h"
-#include "blas.h"
-#include "box.h"
-#include "cuda.h"
-#include "utils.h"
-
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-
 layer make_iseg_layer(int batch, int w, int h, int classes, int ids)
 {
-	layer l = { 0 };
+	layer l = {};
 	l.type = ISEG;
 
 	l.h = h;
@@ -3254,19 +3162,19 @@ layer make_iseg_layer(int batch, int w, int h, int classes, int ids)
 	l.classes = classes;
 	l.batch = batch;
 	l.extra = ids;
-	l.cost = calloc(1, sizeof(float));
+	l.cost = (float*)calloc(1, sizeof(float));
 	l.outputs = h * w*l.c;
 	l.inputs = l.outputs;
 	l.truths = 90 * (l.w*l.h + 1);
-	l.delta = calloc(batch*l.outputs, sizeof(float));
-	l.output = calloc(batch*l.outputs, sizeof(float));
+	l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
+	l.output = (float*)calloc(batch*l.outputs, sizeof(float));
 
-	l.counts = calloc(90, sizeof(int));
-	l.sums = calloc(90, sizeof(float*));
+	l.counts = (int*)calloc(90, sizeof(int));
+	l.sums = (float**)calloc(90, sizeof(float*));
 	if (ids) {
 		int i;
 		for (i = 0; i < 90; ++i) {
-			l.sums[i] = calloc(ids, sizeof(float));
+			l.sums[i] = (float*)calloc(ids, sizeof(float));
 		}
 	}
 
@@ -3293,8 +3201,8 @@ void resize_iseg_layer(layer *l, int w, int h)
 	l->outputs = h * w*l->c;
 	l->inputs = l->outputs;
 
-	l->output = realloc(l->output, l->batch*l->outputs * sizeof(float));
-	l->delta = realloc(l->delta, l->batch*l->outputs * sizeof(float));
+	l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
+	l->delta = (float*)realloc(l->delta, l->batch*l->outputs * sizeof(float));
 
 #ifdef GPU
 	cuda_free(l->delta_gpu);
@@ -3357,7 +3265,7 @@ void forward_iseg_layer(const layer l, network net)
 			}
 		}
 
-		float *mse = calloc(90, sizeof(float));
+		float *mse = (float*)calloc(90, sizeof(float));
 		for (i = 0; i < 90; ++i) {
 			int c = net.truth[b*l.truths + i * (l.w*l.h + 1)];
 			if (c < 0) break;
@@ -3462,28 +3370,17 @@ void backward_iseg_layer_gpu(const layer l, network net)
 
 
 //l2norm_layer.c
-#include "l2norm_layer.h"
-#include "activations.h"
-#include "blas.h"
-#include "cuda.h"
-
-#include <float.h>
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-
 layer make_l2norm_layer(int batch, int inputs)
 {
 	fprintf(stderr, "l2norm                                         %4d\n", inputs);
-	layer l = { 0 };
+	layer l = {};
 	l.type = L2NORM;
 	l.batch = batch;
 	l.inputs = inputs;
 	l.outputs = inputs;
-	l.output = calloc(inputs*batch, sizeof(float));
-	l.scales = calloc(inputs*batch, sizeof(float));
-	l.delta = calloc(inputs*batch, sizeof(float));
+	l.output = (float*)calloc(inputs*batch, sizeof(float));
+	l.scales = (float*)calloc(inputs*batch, sizeof(float));
+	l.delta = (float*)calloc(inputs*batch, sizeof(float));
 
 	l.forward = forward_l2norm_layer;
 	l.backward = backward_l2norm_layer;
@@ -3534,15 +3431,6 @@ void backward_l2norm_layer_gpu(const layer l, network net)
 
 
 //local_layer.c
-#include "local_layer.h"
-#include "utils.h"
-#include "im2col.h"
-#include "col2im.h"
-#include "blas.h"
-#include "gemm.h"
-#include <stdio.h>
-#include <time.h>
-
 int local_out_height(local_layer l)
 {
 	int h = l.h;
@@ -3562,7 +3450,7 @@ int local_out_width(local_layer l)
 local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, int stride, int pad, ACTIVATION activation)
 {
 	int i;
-	local_layer l = { 0 };
+	local_layer l = { };
 	l.type = LOCAL;
 
 	l.h = h;
@@ -3583,18 +3471,18 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
 	l.outputs = l.out_h * l.out_w * l.out_c;
 	l.inputs = l.w * l.h * l.c;
 
-	l.weights = calloc(c*n*size*size*locations, sizeof(float));
-	l.weight_updates = calloc(c*n*size*size*locations, sizeof(float));
+	l.weights = (float*)calloc(c*n*size*size*locations, sizeof(float));
+	l.weight_updates = (float*)calloc(c*n*size*size*locations, sizeof(float));
 
-	l.biases = calloc(l.outputs, sizeof(float));
-	l.bias_updates = calloc(l.outputs, sizeof(float));
+	l.biases = (float*)calloc(l.outputs, sizeof(float));
+	l.bias_updates = (float*)calloc(l.outputs, sizeof(float));
 
 	// float scale = 1./sqrt(size*size*c);
 	float scale = sqrt(2. / (size*size*c));
 	for (i = 0; i < c*n*size*size; ++i) l.weights[i] = scale * rand_uniform(-1, 1);
 
-	l.output = calloc(l.batch*out_h * out_w * n, sizeof(float));
-	l.delta = calloc(l.batch*out_h * out_w * n, sizeof(float));
+	l.output = (float*)calloc(l.batch*out_h * out_w * n, sizeof(float));
+	l.delta = (float*)calloc(l.batch*out_h * out_w * n, sizeof(float));
 
 	l.workspace_size = out_h * out_w*size*size*c;
 
@@ -3836,29 +3724,18 @@ void push_local_layer(local_layer l)
 
 
 //logistic_layer.c
-#include "logistic_layer.h"
-#include "activations.h"
-#include "blas.h"
-#include "cuda.h"
-
-#include <float.h>
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-
 layer make_logistic_layer(int batch, int inputs)
 {
 	fprintf(stderr, "logistic x entropy                             %4d\n", inputs);
-	layer l = { 0 };
+	layer l = { };
 	l.type = LOGXENT;
 	l.batch = batch;
 	l.inputs = inputs;
 	l.outputs = inputs;
-	l.loss = calloc(inputs*batch, sizeof(float));
-	l.output = calloc(inputs*batch, sizeof(float));
-	l.delta = calloc(inputs*batch, sizeof(float));
-	l.cost = calloc(1, sizeof(float));
+	l.loss = (float*)calloc(inputs*batch, sizeof(float));
+	l.output = (float*)calloc(inputs*batch, sizeof(float));
+	l.delta = (float*)calloc(inputs*batch, sizeof(float));
+	l.cost = (float*)calloc(1, sizeof(float));
 
 	l.forward = forward_logistic_layer;
 	l.backward = backward_logistic_layer;
@@ -3918,18 +3795,6 @@ void backward_logistic_layer_gpu(const layer l, network net)
 
 
 //lstm_layer.c
-#include "lstm_layer.h"
-#include "connected_layer.h"
-#include "utils.h"
-#include "cuda.h"
-#include "blas.h"
-#include "gemm.h"
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 static void increment_layer(layer *l, int steps)
 {
 	int num = l->outputs*l->batch*steps;
@@ -3950,48 +3815,48 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
 {
 	fprintf(stderr, "LSTM Layer: %d inputs, %d outputs\n", inputs, outputs);
 	batch = batch / steps;
-	layer l = { 0 };
+	layer l = {  };
 	l.batch = batch;
 	l.type = LSTM;
 	l.steps = steps;
 	l.inputs = inputs;
 
-	l.uf = malloc(sizeof(layer));
+	l.uf = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.uf) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
 	l.uf->batch = batch;
 
-	l.ui = malloc(sizeof(layer));
+	l.ui = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.ui) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
 	l.ui->batch = batch;
 
-	l.ug = malloc(sizeof(layer));
+	l.ug = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.ug) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
 	l.ug->batch = batch;
 
-	l.uo = malloc(sizeof(layer));
+	l.uo = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.uo) = make_connected_layer(batch*steps, inputs, outputs, LINEAR, batch_normalize, adam);
 	l.uo->batch = batch;
 
-	l.wf = malloc(sizeof(layer));
+	l.wf = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.wf) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
 	l.wf->batch = batch;
 
-	l.wi = malloc(sizeof(layer));
+	l.wi = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.wi) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
 	l.wi->batch = batch;
 
-	l.wg = malloc(sizeof(layer));
+	l.wg = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.wg) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
 	l.wg->batch = batch;
 
-	l.wo = malloc(sizeof(layer));
+	l.wo = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.wo) = make_connected_layer(batch*steps, outputs, outputs, LINEAR, batch_normalize, adam);
 	l.wo->batch = batch;
@@ -3999,27 +3864,27 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
 	l.batch_normalize = batch_normalize;
 	l.outputs = outputs;
 
-	l.output = calloc(outputs*batch*steps, sizeof(float));
-	l.state = calloc(outputs*batch, sizeof(float));
+	l.output = (float*)calloc(outputs*batch*steps, sizeof(float));
+	l.state = (float*)calloc(outputs*batch, sizeof(float));
 
 	l.forward = forward_lstm_layer;
 	l.update = update_lstm_layer;
 
-	l.prev_state_cpu = calloc(batch*outputs, sizeof(float));
-	l.prev_cell_cpu = calloc(batch*outputs, sizeof(float));
-	l.cell_cpu = calloc(batch*outputs*steps, sizeof(float));
+	l.prev_state_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.prev_cell_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.cell_cpu = (float*)calloc(batch*outputs*steps, sizeof(float));
 
-	l.f_cpu = calloc(batch*outputs, sizeof(float));
-	l.i_cpu = calloc(batch*outputs, sizeof(float));
-	l.g_cpu = calloc(batch*outputs, sizeof(float));
-	l.o_cpu = calloc(batch*outputs, sizeof(float));
-	l.c_cpu = calloc(batch*outputs, sizeof(float));
-	l.h_cpu = calloc(batch*outputs, sizeof(float));
-	l.temp_cpu = calloc(batch*outputs, sizeof(float));
-	l.temp2_cpu = calloc(batch*outputs, sizeof(float));
-	l.temp3_cpu = calloc(batch*outputs, sizeof(float));
-	l.dc_cpu = calloc(batch*outputs, sizeof(float));
-	l.dh_cpu = calloc(batch*outputs, sizeof(float));
+	l.f_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.i_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.g_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.o_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.c_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.h_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.temp_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.temp2_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.temp3_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.dc_cpu = (float*)calloc(batch*outputs, sizeof(float));
+	l.dh_cpu = (float*)calloc(batch*outputs, sizeof(float));
 
 #ifdef GPU
 	l.forward_gpu = forward_lstm_layer_gpu;
@@ -4552,10 +4417,6 @@ void backward_lstm_layer_gpu(layer l, network state)
 
 
 //maxpool_layer.c
-#include "maxpool_layer.h"
-#include "cuda.h"
-#include <stdio.h>
-
 image get_maxpool_image(maxpool_layer l)
 {
 	int h = l.out_h;
@@ -4574,7 +4435,7 @@ image get_maxpool_delta(maxpool_layer l)
 
 maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride, int padding)
 {
-	maxpool_layer l = { 0 };
+	maxpool_layer l = {  };
 	l.type = MAXPOOL;
 	l.batch = batch;
 	l.h = h;
@@ -4589,9 +4450,9 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
 	l.size = size;
 	l.stride = stride;
 	int output_size = l.out_h * l.out_w * l.out_c * batch;
-	l.indexes = calloc(output_size, sizeof(int));
-	l.output = calloc(output_size, sizeof(float));
-	l.delta = calloc(output_size, sizeof(float));
+	l.indexes = (int*)calloc(output_size, sizeof(int));
+	l.output = (float*)calloc(output_size, sizeof(float));
+	l.delta = (float*)calloc(output_size, sizeof(float));
 	l.forward = forward_maxpool_layer;
 	l.backward = backward_maxpool_layer;
 #ifdef GPU
@@ -4616,9 +4477,9 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 	l->outputs = l->out_w * l->out_h * l->c;
 	int output_size = l->outputs * l->batch;
 
-	l->indexes = realloc(l->indexes, output_size * sizeof(int));
-	l->output = realloc(l->output, output_size * sizeof(float));
-	l->delta = realloc(l->delta, output_size * sizeof(float));
+	l->indexes = (int*)realloc(l->indexes, output_size * sizeof(int));
+	l->output = (float*)realloc(l->output, output_size * sizeof(float));
+	l->delta = (float*)realloc(l->delta, output_size * sizeof(float));
 
 #ifdef GPU
 	cuda_free((float *)l->indexes_gpu);
@@ -4686,15 +4547,10 @@ void backward_maxpool_layer(const maxpool_layer l, network net)
 
 
 //normalization_layer.c
-#include "normalization_layer.h"
-#include "blas.h"
-
-#include <stdio.h>
-
 layer make_normalization_layer(int batch, int w, int h, int c, int size, float alpha, float beta, float kappa)
 {
 	fprintf(stderr, "Local Response Normalization Layer: %d x %d x %d image, %d size\n", w, h, c, size);
-	layer layer = { 0 };
+	layer layer = { };
 	layer.type = NORMALIZATION;
 	layer.batch = batch;
 	layer.h = layer.out_h = h;
@@ -4704,10 +4560,10 @@ layer make_normalization_layer(int batch, int w, int h, int c, int size, float a
 	layer.size = size;
 	layer.alpha = alpha;
 	layer.beta = beta;
-	layer.output = calloc(h * w * c * batch, sizeof(float));
-	layer.delta = calloc(h * w * c * batch, sizeof(float));
-	layer.squared = calloc(h * w * c * batch, sizeof(float));
-	layer.norms = calloc(h * w * c * batch, sizeof(float));
+	layer.output = (float*)calloc(h * w * c * batch, sizeof(float));
+	layer.delta = (float*)calloc(h * w * c * batch, sizeof(float));
+	layer.squared = (float*)calloc(h * w * c * batch, sizeof(float));
+	layer.norms = (float*)calloc(h * w * c * batch, sizeof(float));
 	layer.inputs = w * h*c;
 	layer.outputs = layer.inputs;
 
@@ -4735,10 +4591,10 @@ void resize_normalization_layer(layer *layer, int w, int h)
 	layer->out_w = w;
 	layer->inputs = w * h*c;
 	layer->outputs = layer->inputs;
-	layer->output = realloc(layer->output, h * w * c * batch * sizeof(float));
-	layer->delta = realloc(layer->delta, h * w * c * batch * sizeof(float));
-	layer->squared = realloc(layer->squared, h * w * c * batch * sizeof(float));
-	layer->norms = realloc(layer->norms, h * w * c * batch * sizeof(float));
+	layer->output = (float*)realloc(layer->output, h * w * c * batch * sizeof(float));
+	layer->delta = (float*)realloc(layer->delta, h * w * c * batch * sizeof(float));
+	layer->squared = (float*)realloc(layer->squared, h * w * c * batch * sizeof(float));
+	layer->norms = (float*)realloc(layer->norms, h * w * c * batch * sizeof(float));
 #ifdef GPU
 	cuda_free(layer->output_gpu);
 	cuda_free(layer->delta_gpu);
@@ -4845,21 +4701,9 @@ void backward_normalization_layer_gpu(const layer layer, network net)
 
 
 //region_layer.c
-#include "region_layer.h"
-#include "activations.h"
-#include "blas.h"
-#include "box.h"
-#include "cuda.h"
-#include "utils.h"
-
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-
 layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
 {
-	layer l = { 0 };
+	layer l = { };
 	l.type = REGION;
 
 	l.n = n;
@@ -4872,14 +4716,14 @@ layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
 	l.out_c = l.c;
 	l.classes = classes;
 	l.coords = coords;
-	l.cost = calloc(1, sizeof(float));
-	l.biases = calloc(n * 2, sizeof(float));
-	l.bias_updates = calloc(n * 2, sizeof(float));
+	l.cost = (float*)calloc(1, sizeof(float));
+	l.biases = (float*)calloc(n * 2, sizeof(float));
+	l.bias_updates = (float*)calloc(n * 2, sizeof(float));
 	l.outputs = h * w*n*(classes + coords + 1);
 	l.inputs = l.outputs;
 	l.truths = 30 * (l.coords + 1);
-	l.delta = calloc(batch*l.outputs, sizeof(float));
-	l.output = calloc(batch*l.outputs, sizeof(float));
+	l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
+	l.output = (float*)calloc(batch*l.outputs, sizeof(float));
 	int i;
 	for (i = 0; i < n * 2; ++i) {
 		l.biases[i] = .5;
@@ -4908,8 +4752,8 @@ void resize_region_layer(layer *l, int w, int h)
 	l->outputs = h * w*l->n*(l->classes + l->coords + 1);
 	l->inputs = l->outputs;
 
-	l->output = realloc(l->output, l->batch*l->outputs * sizeof(float));
-	l->delta = realloc(l->delta, l->batch*l->outputs * sizeof(float));
+	l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
+	l->delta = (float*)realloc(l->delta, l->batch*l->outputs * sizeof(float));
 
 #ifdef GPU
 	cuda_free(l->delta_gpu);
@@ -4956,32 +4800,32 @@ void delta_region_mask(float *truth, float *x, int n, int index, float *delta, i
 }
 
 
-void delta_region_class(float *output, float *delta, int index, int class, int classes, tree *hier, float scale, int stride, float *avg_cat, int tag)
+void delta_region_class(float *output, float *delta, int index, int class_n, int classes, tree *hier, float scale, int stride, float *avg_cat, int tag)
 {
 	int i, n;
 	if (hier) {
 		float pred = 1;
-		while (class >= 0) {
-			pred *= output[index + stride * class];
-			int g = hier->group[class];
+		while (class_n >= 0) {
+			pred *= output[index + stride * class_n];
+			int g = hier->group[class_n];
 			int offset = hier->group_offset[g];
 			for (i = 0; i < hier->group_size[g]; ++i) {
 				delta[index + stride * (offset + i)] = scale * (0 - output[index + stride * (offset + i)]);
 			}
-			delta[index + stride * class] = scale * (1 - output[index + stride * class]);
+			delta[index + stride * class_n] = scale * (1 - output[index + stride * class_n]);
 
-			class = hier->parent[class];
+			class_n = hier->parent[class_n];
 		}
 		*avg_cat += pred;
 	}
 	else {
 		if (delta[index] && tag) {
-			delta[index + stride * class] = scale * (1 - output[index + stride * class]);
+			delta[index + stride * class_n] = scale * (1 - output[index + stride * class_n]);
 			return;
 		}
 		for (n = 0; n < classes; ++n) {
-			delta[index + stride * n] = scale * (((n == class) ? 1 : 0) - output[index + stride * n]);
-			if (n == class) *avg_cat += output[index + stride * n];
+			delta[index + stride * n] = scale * (((n == class_n) ? 1 : 0) - output[index + stride * n]);
+			if (n == class_n) *avg_cat += output[index + stride * n];
 		}
 	}
 }
@@ -5050,7 +4894,7 @@ void forward_region_layer(const layer l, network net)
 			for (t = 0; t < 30; ++t) {
 				box truth = float_to_box(net.truth + t * (l.coords + 1) + b * l.truths, 1);
 				if (!truth.x) break;
-				int class = net.truth[t*(l.coords + 1) + b * l.truths + l.coords];
+				int class_n = net.truth[t*(l.coords + 1) + b * l.truths + l.coords];
 				float maxp = 0;
 				int maxi = 0;
 				if (truth.x > 100000 && truth.y > 100000) {
@@ -5059,7 +4903,7 @@ void forward_region_layer(const layer l, network net)
 						int obj_index = entry_index(l, b, n, l.coords);
 						float scale = l.output[obj_index];
 						l.delta[obj_index] = l.noobject_scale * (0 - l.output[obj_index]);
-						float p = scale * get_hierarchy_probability(l.output + class_index, l.softmax_tree, class, l.w*l.h);
+						float p = scale * get_hierarchy_probability(l.output + class_index, l.softmax_tree, class_n, l.w*l.h);
 						if (p > maxp) {
 							maxp = p;
 							maxi = n;
@@ -5067,7 +4911,7 @@ void forward_region_layer(const layer l, network net)
 					}
 					int class_index = entry_index(l, b, maxi, l.coords + 1);
 					int obj_index = entry_index(l, b, maxi, l.coords);
-					delta_region_class(l.output, l.delta, class_index, class, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat, !l.softmax);
+					delta_region_class(l.output, l.delta, class_index, class_n, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat, !l.softmax);
 					if (l.output[obj_index] < .3) l.delta[obj_index] = l.object_scale * (.3 - l.output[obj_index]);
 					else  l.delta[obj_index] = 0;
 					l.delta[obj_index] = 0;
@@ -5157,10 +5001,10 @@ void forward_region_layer(const layer l, network net)
 				l.delta[obj_index] = l.object_scale * (0 - l.output[obj_index]);
 			}
 
-			int class = net.truth[t*(l.coords + 1) + b * l.truths + l.coords];
-			if (l.map) class = l.map[class];
+			int class_n = net.truth[t*(l.coords + 1) + b * l.truths + l.coords];
+			if (l.map) class_n = l.map[class_n];
 			int class_index = entry_index(l, b, best_n*l.w*l.h + j * l.w + i, l.coords + 1);
-			delta_region_class(l.output, l.delta, class_index, class, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat, !l.softmax);
+			delta_region_class(l.output, l.delta, class_index, class_n, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat, !l.softmax);
 			++count;
 			++class_count;
 		}
@@ -5366,16 +5210,9 @@ void zero_objectness(layer l)
 
 
 //reorg_layer.c
-#include "reorg_layer.h"
-#include "cuda.h"
-#include "blas.h"
-
-#include <stdio.h>
-
-
 layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse, int flatten, int extra)
 {
-	layer l = { 0 };
+	layer l = { };
 	l.type = REORG;
 	l.batch = batch;
 	l.stride = stride;
@@ -5410,8 +5247,8 @@ layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse, 
 		fprintf(stderr, "reorg              /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", stride, w, h, c, l.out_w, l.out_h, l.out_c);
 	}
 	int output_size = l.outputs * batch;
-	l.output = calloc(output_size, sizeof(float));
-	l.delta = calloc(output_size, sizeof(float));
+	l.output = (float*)calloc(output_size, sizeof(float));
+	l.delta = (float*)calloc(output_size, sizeof(float));
 
 	l.forward = forward_reorg_layer;
 	l.backward = backward_reorg_layer;
@@ -5448,8 +5285,8 @@ void resize_reorg_layer(layer *l, int w, int h)
 	l->inputs = l->outputs;
 	int output_size = l->outputs * l->batch;
 
-	l->output = realloc(l->output, output_size * sizeof(float));
-	l->delta = realloc(l->delta, output_size * sizeof(float));
+	l->output = (float*)realloc(l->output, output_size * sizeof(float));
+	l->delta = (float*)realloc(l->delta, output_size * sizeof(float));
 
 #ifdef GPU
 	cuda_free(l->output_gpu);
@@ -5567,18 +5404,6 @@ void backward_reorg_layer_gpu(layer l, network net)
 
 
 //rnn_layer.c
-#include "rnn_layer.h"
-#include "connected_layer.h"
-#include "utils.h"
-#include "cuda.h"
-#include "blas.h"
-#include "gemm.h"
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 static void increment_layer(layer *l, int steps)
 {
 	int num = l->outputs*l->batch*steps;
@@ -5599,26 +5424,26 @@ layer make_rnn_layer(int batch, int inputs, int outputs, int steps, ACTIVATION a
 {
 	fprintf(stderr, "RNN Layer: %d inputs, %d outputs\n", inputs, outputs);
 	batch = batch / steps;
-	layer l = { 0 };
+	layer l = {  };
 	l.batch = batch;
 	l.type = RNN;
 	l.steps = steps;
 	l.inputs = inputs;
 
-	l.state = calloc(batch*outputs, sizeof(float));
-	l.prev_state = calloc(batch*outputs, sizeof(float));
+	l.state = (float*)calloc(batch*outputs, sizeof(float));
+	l.prev_state = (float*)calloc(batch*outputs, sizeof(float));
 
-	l.input_layer = malloc(sizeof(layer));
+	l.input_layer = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.input_layer) = make_connected_layer(batch*steps, inputs, outputs, activation, batch_normalize, adam);
 	l.input_layer->batch = batch;
 
-	l.self_layer = malloc(sizeof(layer));
+	l.self_layer = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.self_layer) = make_connected_layer(batch*steps, outputs, outputs, activation, batch_normalize, adam);
 	l.self_layer->batch = batch;
 
-	l.output_layer = malloc(sizeof(layer));
+	l.output_layer = (layer*)malloc(sizeof(layer));
 	fprintf(stderr, "\t\t");
 	*(l.output_layer) = make_connected_layer(batch*steps, outputs, outputs, activation, batch_normalize, adam);
 	l.output_layer->batch = batch;
@@ -5870,16 +5695,10 @@ void backward_rnn_layer_gpu(layer l, network net)
 
 
 //route_layer.c
-#include "route_layer.h"
-#include "cuda.h"
-#include "blas.h"
-
-#include <stdio.h>
-
 route_layer make_route_layer(int batch, int n, int *input_layers, int *input_sizes)
 {
 	fprintf(stderr, "route ");
-	route_layer l = { 0 };
+	route_layer l = { };
 	l.type = ROUTE;
 	l.batch = batch;
 	l.n = n;
@@ -5894,8 +5713,8 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
 	fprintf(stderr, "\n");
 	l.outputs = outputs;
 	l.inputs = outputs;
-	l.delta = calloc(outputs*batch, sizeof(float));
-	l.output = calloc(outputs*batch, sizeof(float));;
+	l.delta = (float*)calloc(outputs*batch, sizeof(float));
+	l.output = (float*)calloc(outputs*batch, sizeof(float));;
 
 	l.forward = forward_route_layer;
 	l.backward = backward_route_layer;
@@ -5932,8 +5751,8 @@ void resize_route_layer(route_layer *l, network *net)
 		}
 	}
 	l->inputs = l->outputs;
-	l->delta = realloc(l->delta, l->outputs*l->batch * sizeof(float));
-	l->output = realloc(l->output, l->outputs*l->batch * sizeof(float));
+	l->delta = (float*)realloc(l->delta, l->outputs*l->batch * sizeof(float));
+	l->output = (float*)realloc(l->output, l->outputs*l->batch * sizeof(float));
 
 #ifdef GPU
 	cuda_free(l->output_gpu);
@@ -6014,18 +5833,10 @@ void backward_route_layer_gpu(const route_layer l, network net)
 
 
 //shortcut_layer.c
-#include "shortcut_layer.h"
-#include "cuda.h"
-#include "blas.h"
-#include "activations.h"
-
-#include <stdio.h>
-#include <assert.h>
-
 layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int h2, int c2)
 {
 	fprintf(stderr, "res  %3d                %4d x%4d x%4d   ->  %4d x%4d x%4d\n", index, w2, h2, c2, w, h, c);
-	layer l = { 0 };
+	layer l = { };
 	l.type = SHORTCUT;
 	l.batch = batch;
 	l.w = w2;
@@ -6039,8 +5850,8 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
 
 	l.index = index;
 
-	l.delta = calloc(l.outputs*batch, sizeof(float));
-	l.output = calloc(l.outputs*batch, sizeof(float));;
+	l.delta = (float*)calloc(l.outputs*batch, sizeof(float));
+	l.output = (float*)calloc(l.outputs*batch, sizeof(float));;
 
 	l.forward = forward_shortcut_layer;
 	l.backward = backward_shortcut_layer;
@@ -6062,8 +5873,8 @@ void resize_shortcut_layer(layer *l, int w, int h)
 	l->h = l->out_h = h;
 	l->outputs = w * h*l->out_c;
 	l->inputs = l->outputs;
-	l->delta = realloc(l->delta, l->outputs*l->batch * sizeof(float));
-	l->output = realloc(l->output, l->outputs*l->batch * sizeof(float));
+	l->delta = (float*)realloc(l->delta, l->outputs*l->batch * sizeof(float));
+	l->output = (float*)realloc(l->output, l->outputs*l->batch * sizeof(float));
 
 #ifdef GPU
 	cuda_free(l->output_gpu);
@@ -6112,30 +5923,20 @@ void backward_shortcut_layer_gpu(const layer l, network net)
 
 
 //softmax_layer.c
-#include "softmax_layer.h"
-#include "blas.h"
-#include "cuda.h"
-
-#include <float.h>
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-
 softmax_layer make_softmax_layer(int batch, int inputs, int groups)
 {
 	assert(inputs%groups == 0);
 	fprintf(stderr, "softmax                                        %4d\n", inputs);
-	softmax_layer l = { 0 };
+	softmax_layer l = { };
 	l.type = SOFTMAX;
 	l.batch = batch;
 	l.groups = groups;
 	l.inputs = inputs;
 	l.outputs = inputs;
-	l.loss = calloc(inputs*batch, sizeof(float));
-	l.output = calloc(inputs*batch, sizeof(float));
-	l.delta = calloc(inputs*batch, sizeof(float));
-	l.cost = calloc(1, sizeof(float));
+	l.loss = (float*)calloc(inputs*batch, sizeof(float));
+	l.output = (float*)calloc(inputs*batch, sizeof(float));
+	l.delta = (float*)calloc(inputs*batch, sizeof(float));
+	l.cost = (float*)calloc(1, sizeof(float));
 
 	l.forward = forward_softmax_layer;
 	l.backward = backward_softmax_layer;
@@ -6232,15 +6033,9 @@ void backward_softmax_layer_gpu(const softmax_layer layer, network net)
 
 
 //upsample_layer.c
-#include "upsample_layer.h"
-#include "cuda.h"
-#include "blas.h"
-
-#include <stdio.h>
-
 layer make_upsample_layer(int batch, int w, int h, int c, int stride)
 {
-	layer l = { 0 };
+	layer l = { };
 	l.type = UPSAMPLE;
 	l.batch = batch;
 	l.w = w;
@@ -6258,8 +6053,8 @@ layer make_upsample_layer(int batch, int w, int h, int c, int stride)
 	l.stride = stride;
 	l.outputs = l.out_w*l.out_h*l.out_c;
 	l.inputs = l.w*l.h*l.c;
-	l.delta = calloc(l.outputs*batch, sizeof(float));
-	l.output = calloc(l.outputs*batch, sizeof(float));;
+	l.delta = (float*)calloc(l.outputs*batch, sizeof(float));
+	l.output = (float*)calloc(l.outputs*batch, sizeof(float));;
 
 	l.forward = forward_upsample_layer;
 	l.backward = backward_upsample_layer;
@@ -6287,8 +6082,8 @@ void resize_upsample_layer(layer *l, int w, int h)
 	}
 	l->outputs = l->out_w*l->out_h*l->out_c;
 	l->inputs = l->h*l->w*l->c;
-	l->delta = realloc(l->delta, l->outputs*l->batch * sizeof(float));
-	l->output = realloc(l->output, l->outputs*l->batch * sizeof(float));
+	l->delta = (float*)realloc(l->delta, l->outputs*l->batch * sizeof(float));
+	l->output = (float*)realloc(l->output, l->outputs*l->batch * sizeof(float));
 
 #ifdef GPU
 	cuda_free(l->output_gpu);
@@ -6353,22 +6148,10 @@ void backward_upsample_layer_gpu(const layer l, network net)
 
 
 //yolo_layer.c
-#include "yolo_layer.h"
-#include "activations.h"
-#include "blas.h"
-#include "box.h"
-#include "cuda.h"
-#include "utils.h"
-
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-
 layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int classes)
 {
 	int i;
-	layer l = { 0 };
+	layer l = { };
 	l.type = YOLO;
 
 	l.n = n;
@@ -6381,21 +6164,21 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
 	l.out_h = l.h;
 	l.out_c = l.c;
 	l.classes = classes;
-	l.cost = calloc(1, sizeof(float));
-	l.biases = calloc(total * 2, sizeof(float));
+	l.cost = (float*)calloc(1, sizeof(float));
+	l.biases = (float*)calloc(total * 2, sizeof(float));
 	if (mask) l.mask = mask;
 	else {
-		l.mask = calloc(n, sizeof(int));
+		l.mask = (int*)calloc(n, sizeof(int));
 		for (i = 0; i < n; ++i) {
 			l.mask[i] = i;
 		}
 	}
-	l.bias_updates = calloc(n * 2, sizeof(float));
+	l.bias_updates = (float*)calloc(n * 2, sizeof(float));
 	l.outputs = h * w*n*(classes + 4 + 1);
 	l.inputs = l.outputs;
 	l.truths = 90 * (4 + 1);
-	l.delta = calloc(batch*l.outputs, sizeof(float));
-	l.output = calloc(batch*l.outputs, sizeof(float));
+	l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
+	l.output = (float*)calloc(batch*l.outputs, sizeof(float));
 	for (i = 0; i < total * 2; ++i) {
 		l.biases[i] = .5;
 	}
@@ -6423,8 +6206,8 @@ void resize_yolo_layer(layer *l, int w, int h)
 	l->outputs = h * w*l->n*(l->classes + 4 + 1);
 	l->inputs = l->outputs;
 
-	l->output = realloc(l->output, l->batch*l->outputs * sizeof(float));
-	l->delta = realloc(l->delta, l->batch*l->outputs * sizeof(float));
+	l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
+	l->delta = (float*)realloc(l->delta, l->batch*l->outputs * sizeof(float));
 
 #ifdef GPU
 	cuda_free(l->delta_gpu);
@@ -6463,17 +6246,17 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
 }
 
 
-void delta_yolo_class(float *output, float *delta, int index, int class, int classes, int stride, float *avg_cat)
+void delta_yolo_class(float *output, float *delta, int index, int class_n, int classes, int stride, float *avg_cat)
 {
 	int n;
 	if (delta[index]) {
-		delta[index + stride * class] = 1 - output[index + stride * class];
-		if (avg_cat) *avg_cat += output[index + stride * class];
+		delta[index + stride * class_n] = 1 - output[index + stride * class_n];
+		if (avg_cat) *avg_cat += output[index + stride * class_n];
 		return;
 	}
 	for (n = 0; n < classes; ++n) {
-		delta[index + stride * n] = ((n == class) ? 1 : 0) - output[index + stride * n];
-		if (n == class && avg_cat) *avg_cat += output[index + stride * n];
+		delta[index + stride * n] = ((n == class_n) ? 1 : 0) - output[index + stride * n];
+		if (n == class_n && avg_cat) *avg_cat += output[index + stride * n];
 	}
 }
 
@@ -6537,10 +6320,10 @@ void forward_yolo_layer(const layer l, network net)
 					if (best_iou > l.truth_thresh) {
 						l.delta[obj_index] = 1 - l.output[obj_index];
 
-						int class = net.truth[best_t*(4 + 1) + b * l.truths + 4];
-						if (l.map) class = l.map[class];
+						int class_n = net.truth[best_t*(4 + 1) + b * l.truths + 4];
+						if (l.map) class_n = l.map[class_n];
 						int class_index = entry_index(l, b, n*l.w*l.h + j * l.w + i, 4 + 1);
-						delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0);
+						delta_yolo_class(l.output, l.delta, class_index, class_n, l.classes, l.w*l.h, 0);
 						box truth = float_to_box(net.truth + best_t * (4 + 1) + b * l.truths, 1);
 						delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2 - truth.w*truth.h), l.w*l.h);
 					}
@@ -6577,10 +6360,10 @@ void forward_yolo_layer(const layer l, network net)
 				avg_obj += l.output[obj_index];
 				l.delta[obj_index] = 1 - l.output[obj_index];
 
-				int class = net.truth[t*(4 + 1) + b * l.truths + 4];
-				if (l.map) class = l.map[class];
+				int class_n = net.truth[t*(4 + 1) + b * l.truths + 4];
+				if (l.map) class_n = l.map[class_n];
 				int class_index = entry_index(l, b, mask_n*l.w*l.h + j * l.w + i, 4 + 1);
-				delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, &avg_cat);
+				delta_yolo_class(l.output, l.delta, class_index, class_n, l.classes, l.w*l.h, &avg_cat);
 
 				++count;
 				++class_count;
