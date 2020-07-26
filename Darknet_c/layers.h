@@ -273,12 +273,11 @@ typedef layer detection_layer;
 detection_layer make_detection_layer(int batch, int inputs, int n, int size, int classes, int coords, int rescore);
 void forward_detection_layer(const detection_layer l, network net);
 void backward_detection_layer(const detection_layer l, network net);
-
+void get_detection_detections(layer l, int w, int h, float thresh, detection *dets);
 #ifdef GPU
 void forward_detection_layer_gpu(const detection_layer l, network net);
 void backward_detection_layer_gpu(detection_layer l, network net);
 #endif
-
 #endif
 
 //dropout_layer.h
@@ -439,6 +438,8 @@ layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
 void forward_region_layer(const layer l, network net);
 void backward_region_layer(const layer l, network net);
 void resize_region_layer(layer *l, int w, int h);
+void get_region_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, float tree_thresh, int relative, detection *dets);
+
 
 #ifdef GPU
 void forward_region_layer_gpu(const layer l, network net);
@@ -552,6 +553,7 @@ void forward_yolo_layer(const layer l, network net);
 void backward_yolo_layer(const layer l, network net);
 void resize_yolo_layer(layer *l, int w, int h);
 int yolo_num_detections(layer l, float thresh);
+int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets);
 
 #ifdef GPU
 void forward_yolo_layer_gpu(const layer l, network net);

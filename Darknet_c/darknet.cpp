@@ -7,11 +7,17 @@
 #include <float.h>
 #include <limits.h>
 #include <time.h>
+
+//Subsititution of <sys/time.h> for what_time_is_it_now()
+#include <iostream>
+#include <chrono>
+#include <ctime>  
+
+//Substitution of <unistd.h> for read(), write()
+#include <io.h> 
+
 #include "layers.h"
 #include "darknet.h"
-
-//#incude <sys/time.h>
-//#include <unistd.h>
 
 
 //blas.c
@@ -3140,29 +3146,6 @@ namespace cv
 #define DEMO 1
 
 #ifdef CV_VERSION
-
-static char **demo_names;
-static image **demo_alphabet;
-static int demo_classes;
-
-static network *net;
-static image buff[3];
-static image buff_letter[3];
-static int buff_index = 0;
-static void * cap;
-static float fps = 0;
-static float demo_thresh = 0;
-static float demo_hier = .5;
-static int running = 0;
-
-static int demo_frame = 3;
-static int demo_index = 0;
-static float **predictions;
-static float *avg;
-static int demo_done = 0;
-static int demo_total = 0;
-double demo_time;
-
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num);
 
 int size_network(network *net)
@@ -3363,15 +3346,19 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 		cv::make_window((char*)"Demo", 1352, 1013, fullscreen);
 	}
 
-	demo_time = what_time_is_it_now();
+	auto start = std::chrono::system_clock::now();
+
 
 	while (!demo_done) {
 		buff_index = (buff_index + 1) % 3;
 		if (pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
 		if (pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 		if (!prefix) {
-			fps = 1. / (what_time_is_it_now() - demo_time);
-			demo_time = what_time_is_it_now();
+			auto end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end - start;
+			fps = 1. / elapsed_seconds.count();
+
+			start = std::chrono::system_clock::now();
 			display_in_thread(0);
 		}
 		else {
@@ -8395,7 +8382,7 @@ tree *read_tree(char *filename)
 		t.child = (int*)realloc(t.child, (n + 1) * sizeof(int));
 		t.child[n] = -1;
 
-		t.name = (char*)realloc(t.name, (n + 1) * sizeof(char *));
+		t.name = (char**)realloc(t.name, (n + 1) * sizeof(char *));
 		t.name[n] = id;
 		if (parent != last_parent) {
 			++groups;
@@ -8440,15 +8427,6 @@ tree *read_tree(char *filename)
 
 
 //utils.c
-double what_time_is_it_now()
-{
-	struct timeval time {};
-	if (gettimeofday(&time, NULL)) {
-		return 0;
-	}
-	return (double)time.tv_sec + (double)time.tv_usec * .000001;
-}
-
 int *read_intlist(char *gpu_list, int *ngpus, int d)
 {
 	int *gpus = 0;
@@ -8466,7 +8444,7 @@ int *read_intlist(char *gpu_list, int *ngpus, int d)
 		}
 	}
 	else {
-		gpus = (float*)calloc(1, sizeof(float));
+		gpus = (int*)calloc(1, sizeof(int));
 		*gpus = d;
 		*ngpus = 1;
 	}
@@ -8488,7 +8466,7 @@ int *read_map(char *filename)
 	return map;
 }
 
-void sorta_shuffle(int *arr, size_t n, size_t size, size_t sections)
+void sorta_shuffle(sortable_bbox *arr, size_t n, size_t size, size_t sections)
 {
 	size_t i;
 	for (i = 0; i < sections; ++i) {
@@ -8499,7 +8477,7 @@ void sorta_shuffle(int *arr, size_t n, size_t size, size_t sections)
 	}
 }
 
-void shuffle(int *arr, size_t n, size_t size)
+void shuffle(sortable_bbox *arr, size_t n, size_t size)
 {
 	size_t i;
 	void *swp = calloc(1, size);
