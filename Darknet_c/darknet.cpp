@@ -1,3 +1,4 @@
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,8 @@
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+
+//put cassert here to avoid 'assert not defined'
 #include <cassert>
 
 
@@ -7492,7 +7495,6 @@ layer parse_shortcut(list *options, size_params params, network *net)
 	return s;
 }
 
-
 layer parse_l2norm(list *options, size_params params)
 {
 	layer l = make_l2norm_layer(params.batch, params.inputs);
@@ -7501,7 +7503,6 @@ layer parse_l2norm(list *options, size_params params)
 	l.c = l.out_c = params.c;
 	return l;
 }
-
 
 layer parse_logistic(list *options, size_params params)
 {
@@ -8141,6 +8142,25 @@ void load_convolutional_weights(layer l, FILE *fp)
 	if (l.numload) l.n = l.numload;
 	int num = l.c / l.groups*l.n*l.size*l.size;
 	fread(l.biases, sizeof(float), l.n, fp);
+
+//	float* t_biases = new float [l.n];
+//	t_biases = l.biases;
+
+//	std::cout << "l.n: " << l.n << std::endl;
+
+//	for (int i = 0; i < l.n; i++)
+//	{
+//		std::cout << *(t_biases + i) << " ";
+//		if (i % 10 == 9)
+//		{
+//			std::cout << std::endl;
+//		}
+//
+//	}
+//	std::cout << std::endl;
+//	std::cout << std::endl;
+
+
 	if (l.batch_normalize && (!l.dontloadscales)) {
 		fread(l.scales, sizeof(float), l.n, fp);
 		fread(l.rolling_mean, sizeof(float), l.n, fp);
@@ -8172,6 +8192,7 @@ void load_convolutional_weights(layer l, FILE *fp)
 			printf("\n");
 		}
 	}
+
 	fread(l.weights, sizeof(float), num, fp);
 	//if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
 	if (l.flipped) {
@@ -8220,6 +8241,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
 		if (l.dontload) continue;
 		if (l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL) {
 			load_convolutional_weights(l, fp);
+		//	std::cout << "Layer Name: " << "conv " << (i + 1) << std::endl;
 		}
 		if (l.type == CONNECTED) {
 			load_connected_weights(l, fp, transpose);
