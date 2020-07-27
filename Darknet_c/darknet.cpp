@@ -2,11 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <assert.h>
 #include <opencv2/opencv.hpp>
 #include <float.h>
 #include <limits.h>
 #include <time.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+#include <cassert>
+
 
 //Subsititution of <sys/time.h> for what_time_is_it_now()
 #include <iostream>
@@ -3847,6 +3853,7 @@ void im2col_cpu(float* data_im,
 
 
 //image.c
+float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
 float get_color(int c, int x, int max)
 {
 	float ratio = ((float)x / max) * 5;
@@ -8761,14 +8768,14 @@ char *fgetl(FILE *fp)
 int read_int(int fd)
 {
 	int n = 0;
-	int next = read(fd, &n, sizeof(int));
+	int next = _read(fd, &n, sizeof(int));
 	if (next <= 0) return -1;
 	return n;
 }
 
 void write_int(int fd, int n)
 {
-	int next = write(fd, &n, sizeof(int));
+	int next = _write(fd, &n, sizeof(int));
 	if (next <= 0) error("read failed");
 }
 
@@ -8776,7 +8783,7 @@ int read_all_fail(int fd, char *buffer, size_t bytes)
 {
 	size_t n = 0;
 	while (n < bytes) {
-		int next = read(fd, buffer + n, bytes - n);
+		int next = _read(fd, buffer + n, bytes - n);
 		if (next <= 0) return 1;
 		n += next;
 	}
@@ -8787,7 +8794,7 @@ int write_all_fail(int fd, char *buffer, size_t bytes)
 {
 	size_t n = 0;
 	while (n < bytes) {
-		size_t next = write(fd, buffer + n, bytes - n);
+		size_t next = _write(fd, buffer + n, bytes - n);
 		if (next <= 0) return 1;
 		n += next;
 	}
@@ -8798,7 +8805,7 @@ void read_all(int fd, char *buffer, size_t bytes)
 {
 	size_t n = 0;
 	while (n < bytes) {
-		int next = read(fd, buffer + n, bytes - n);
+		int next = _read(fd, buffer + n, bytes - n);
 		if (next <= 0) error("read failed");
 		n += next;
 	}
@@ -8808,7 +8815,7 @@ void write_all(int fd, char *buffer, size_t bytes)
 {
 	size_t n = 0;
 	while (n < bytes) {
-		size_t next = write(fd, buffer + n, bytes - n);
+		size_t next = _write(fd, buffer + n, bytes - n);
 		if (next <= 0) error("write failed");
 		n += next;
 	}

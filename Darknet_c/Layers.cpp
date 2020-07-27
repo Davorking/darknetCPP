@@ -4,7 +4,8 @@
 #include <iostream>
 #include <string>
 #include <string.h>
-#include "darknet.h"
+#include "layers.h"
+#include <cassert>
 
 //activation_layer.c
 layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
@@ -2094,10 +2095,6 @@ void forward_crop_layer(const crop_layer l, network net)
 
 
 //deconvolutional_layer.c
-static size_t get_workspace_size(layer l) {
-	return (size_t)l.h*l.w*l.size*l.size*l.n * sizeof(float);
-}
-
 void bilinear_init(layer l)
 {
 	int i, j, f;
@@ -2739,7 +2736,8 @@ void backward_dropout_layer(dropout_layer l, network net)
 
 
 //gru_layer.c
-static void increment_layer(layer *l, int steps)
+//Already defined in another_layer.c
+/*static void increment_layer(layer *l, int steps)
 {
 	int num = l->outputs*l->batch*steps;
 	l->output += num;
@@ -2753,7 +2751,7 @@ static void increment_layer(layer *l, int steps)
 	l->x_gpu += num;
 	l->x_norm_gpu += num;
 #endif
-}
+}*/
 
 layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_normalize, int adam)
 {
@@ -3214,7 +3212,8 @@ void resize_iseg_layer(layer *l, int w, int h)
 void forward_iseg_layer(const layer l, network net)
 {
 
-	double time = what_time_is_it_now();
+	clock_t time = clock();
+//	double time = what_time_is_it_now();
 	int i, b, j, k;
 	int ids = l.extra;
 	memcpy(l.output, net.input, l.outputs*l.batch * sizeof(float));
@@ -3325,7 +3324,7 @@ void forward_iseg_layer(const layer l, network net)
 	}
 
 	*(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
-	printf("took %lf sec\n", what_time_is_it_now() - time);
+	printf("took %lf sec\n", sec(clock() - time));
 }
 
 void backward_iseg_layer(const layer l, network net)
@@ -3793,6 +3792,7 @@ void backward_logistic_layer_gpu(const layer l, network net)
 
 
 //lstm_layer.c
+/*Declared in crnn_layer.c
 static void increment_layer(layer *l, int steps)
 {
 	int num = l->outputs*l->batch*steps;
@@ -3807,7 +3807,7 @@ static void increment_layer(layer *l, int steps)
 	l->x_gpu += num;
 	l->x_norm_gpu += num;
 #endif
-}
+}*/
 
 layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_normalize, int adam)
 {
@@ -5402,6 +5402,7 @@ void backward_reorg_layer_gpu(layer l, network net)
 
 
 //rnn_layer.c
+/*Declared in crnn_layer.c
 static void increment_layer(layer *l, int steps)
 {
 	int num = l->outputs*l->batch*steps;
@@ -5416,7 +5417,7 @@ static void increment_layer(layer *l, int steps)
 	l->x_gpu += num;
 	l->x_norm_gpu += num;
 #endif
-}
+}*/
 
 layer make_rnn_layer(int batch, int inputs, int outputs, int steps, ACTIVATION activation, int batch_normalize, int adam)
 {
@@ -6258,12 +6259,13 @@ void delta_yolo_class(float *output, float *delta, int index, int class_n, int c
 	}
 }
 
+/*Declared in region_layer.c
 static int entry_index(layer l, int batch, int location, int entry)
 {
 	int n = location / (l.w*l.h);
 	int loc = location % (l.w*l.h);
 	return batch * l.outputs + n * l.w*l.h*(4 + l.classes + 1) + entry * l.w*l.h + loc;
-}
+}*/
 
 void forward_yolo_layer(const layer l, network net)
 {
