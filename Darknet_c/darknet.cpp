@@ -3019,7 +3019,7 @@ data *split_data(data d, int part, int total)
 namespace cv
 {
 
-	extern "C" {
+//	extern "C" {
 
 		IplImage *image_to_ipl(image im)
 		{
@@ -3143,7 +3143,7 @@ namespace cv
 			}
 		}
 
-	}
+//	}
 }
 #endif
 
@@ -4072,7 +4072,11 @@ image **load_alphabet()
 		alphabets[j] = (image*)calloc(128, sizeof(image));
 		for (i = 32; i < 127; ++i) {
 			char buff[256];
-			sprintf(buff, "data/labels/%d_%d.png", i, j);
+//			sprintf(buff, "data/labels/%d_%d.png", i, j);
+
+			sprintf(buff, "C:\\Users\\ASUS\\Desktop\\temp_data\\darknet\\DarkNet\\darknet\\data\\labels\\%d_%d.png", i, j);
+
+
 			alphabets[j][i] = load_image_color(buff, 0, 0);
 		}
 	}
