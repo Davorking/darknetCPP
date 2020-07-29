@@ -28,6 +28,9 @@
 #include "layers.h"
 #include "darknet.h"
 
+/*1.Construct a network according to configure file you provided*/
+/*2.Read in the pre-defined weight file (optional)*/
+/*3.Perform task specified by the user*/
 
 //blas.c
 void reorg_cpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
@@ -117,7 +120,7 @@ void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2,
 
 void mean_cpu(float *x, int batch, int filters, int spatial, float *mean)
 {
-	float scale = 1. / (batch * spatial);
+	float scale = (float)(1. / (batch * spatial));
 	int i, j, k;
 	for (i = 0; i < filters; ++i) {
 		mean[i] = 0;
@@ -133,7 +136,7 @@ void mean_cpu(float *x, int batch, int filters, int spatial, float *mean)
 
 void variance_cpu(float *x, float *mean, int batch, int filters, int spatial, float *variance)
 {
-	float scale = 1. / (batch * spatial - 1);
+	float scale = (float)(1. / (batch * spatial - 1));
 	int i, j, k;
 	for (i = 0; i < filters; ++i) {
 		variance[i] = 0;
@@ -270,7 +273,7 @@ void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
 		}
 		else {
 			error[i] = 2 * abs_val - 1;
-			delta[i] = (diff < 0) ? 1 : -1;
+			delta[i] = (float)((diff < 0) ? 1 : -1);
 		}
 	}
 }
@@ -281,7 +284,7 @@ void l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
 	for (i = 0; i < n; ++i) {
 		float diff = truth[i] - pred[i];
 		error[i] = fabs(diff);
-		delta[i] = diff > 0 ? 1 : -1;
+		delta[i] = (float)(diff > 0 ? 1 : -1);
 	}
 }
 
@@ -597,12 +600,12 @@ dbox dunion(box a, box b)
 void test_dunion()
 {
 	box a = { 0, 0, 1, 1 };
-	box dxa = { 0 + .0001, 0, 1, 1 };
-	box dya = { 0, 0 + .0001, 1, 1 };
-	box dwa = { 0, 0, 1 + .0001, 1 };
-	box dha = { 0, 0, 1, 1 + .0001 };
+	box dxa = { (float)(0 + .0001), 0, 1, 1 };
+	box dya = { 0, (float)(0 + .0001), 1, 1 };
+	box dwa = { 0, 0, (float)(1 + .0001), 1 };
+	box dha = { 0, 0, 1, (float)(1 + .0001) };
 
-	box b = { .5, .5, .2, .2 };
+	box b = { (float).5, (float).5, (float).2, (float).2 };
 	dbox di = dunion(a, b);
 	printf("Union: %f %f %f %f\n", di.dx, di.dy, di.dw, di.dh);
 	float inter = box_union(a, b);
@@ -610,21 +613,21 @@ void test_dunion()
 	float yinter = box_union(dya, b);
 	float winter = box_union(dwa, b);
 	float hinter = box_union(dha, b);
-	xinter = (xinter - inter) / (.0001);
-	yinter = (yinter - inter) / (.0001);
-	winter = (winter - inter) / (.0001);
-	hinter = (hinter - inter) / (.0001);
+	xinter = (float)((xinter - inter) / (.0001));
+	yinter = (float)((yinter - inter) / (.0001));
+	winter = (float)((winter - inter) / (.0001));
+	hinter = (float)((hinter - inter) / (.0001));
 	printf("Union Manual %f %f %f %f\n", xinter, yinter, winter, hinter);
 }
 void test_dintersect()
 {
 	box a = { 0, 0, 1, 1 };
-	box dxa = { 0 + .0001, 0, 1, 1 };
-	box dya = { 0, 0 + .0001, 1, 1 };
-	box dwa = { 0, 0, 1 + .0001, 1 };
-	box dha = { 0, 0, 1, 1 + .0001 };
+	box dxa = { (float)(0 + .0001), 0, 1, 1 };
+	box dya = { 0, (float)(0 + .0001), 1, 1 };
+	box dwa = { 0, 0, (float)(1 + .0001), 1 };
+	box dha = { 0, 0, 1, (float)(1 + .0001) };
 
-	box b = { .5, .5, .2, .2 };
+	box b = { (float).5, (float).5, (float).2, (float).2 };
 	dbox di = dintersect(a, b);
 	printf("Inter: %f %f %f %f\n", di.dx, di.dy, di.dw, di.dh);
 	float inter = box_intersection(a, b);
@@ -632,10 +635,10 @@ void test_dintersect()
 	float yinter = box_intersection(dya, b);
 	float winter = box_intersection(dwa, b);
 	float hinter = box_intersection(dha, b);
-	xinter = (xinter - inter) / (.0001);
-	yinter = (yinter - inter) / (.0001);
-	winter = (winter - inter) / (.0001);
-	hinter = (hinter - inter) / (.0001);
+	xinter = (float)((xinter - inter) / (.0001));
+	yinter = (float)((yinter - inter) / (.0001));
+	winter = (float)((winter - inter) / (.0001));
+	hinter = (float)((hinter - inter) / (.0001));
 	printf("Inter Manual %f %f %f %f\n", xinter, yinter, winter, hinter);
 }
 
@@ -644,12 +647,12 @@ void test_box()
 	test_dintersect();
 	test_dunion();
 	box a = { 0, 0, 1, 1 };
-	box dxa = { 0 + .00001, 0, 1, 1 };
-	box dya = { 0, 0 + .00001, 1, 1 };
-	box dwa = { 0, 0, 1 + .00001, 1 };
-	box dha = { 0, 0, 1, 1 + .00001 };
+	box dxa = { (float)(0 + .00001), 0, 1, 1 };
+	box dya = { 0, (float)(0 + .00001), 1, 1 };
+	box dwa = { 0, 0, (float)(1 + .00001), 1 };
+	box dha = { 0, 0, 1, (float)(1 + .00001) };
 
-	box b = { .5, 0, .2, .2 };
+	box b = { (float).5, 0, (float).2, (float).2 };
 
 	float iou = box_iou(a, b);
 	iou = (1 - iou)*(1 - iou);
@@ -661,10 +664,10 @@ void test_box()
 	float yiou = box_iou(dya, b);
 	float wiou = box_iou(dwa, b);
 	float hiou = box_iou(dha, b);
-	xiou = ((1 - xiou)*(1 - xiou) - iou) / (.00001);
-	yiou = ((1 - yiou)*(1 - yiou) - iou) / (.00001);
-	wiou = ((1 - wiou)*(1 - wiou) - iou) / (.00001);
-	hiou = ((1 - hiou)*(1 - hiou) - iou) / (.00001);
+	xiou = (float)(((1 - xiou)*(1 - xiou) - iou) / (.00001));
+	yiou = (float)(((1 - yiou)*(1 - yiou) - iou) / (.00001));
+	wiou = (float)(((1 - wiou)*(1 - wiou) - iou) / (.00001));
+	hiou = (float)(((1 - hiou)*(1 - hiou) - iou) / (.00001));
 	printf("manual %f %f %f %f\n", xiou, yiou, wiou, hiou);
 }
 
@@ -726,8 +729,8 @@ box decode_box(box b, box anchor)
 	box decode;
 	decode.x = b.x * anchor.w + anchor.x;
 	decode.y = b.y * anchor.h + anchor.y;
-	decode.w = pow(2., b.w) * anchor.w;
-	decode.h = pow(2., b.h) * anchor.h;
+	decode.w = (float)(pow(2., b.w) * anchor.w);
+	decode.h = (float)(pow(2., b.h) * anchor.h);
 	return decode;
 }
 
@@ -769,7 +772,7 @@ void col2im_cpu(float* data_col,
 				int col_index = (c * height_col + h) * width_col + w;
 				double val = data_col[col_index];
 				col2im_add_pixel(data_im, height, width, channels,
-					im_row, im_col, c_im, pad, val);
+					im_row, im_col, c_im, pad, (float)val);
 			}
 		}
 	}
@@ -784,7 +787,7 @@ void col2im_cpu(float* data_col,
 //compare.c
 void train_compare(char *cfgfile, char *weightfile)
 {
-	srand(time(0));
+	srand((unsigned int)time(0));
 	float avg_loss = -1;
 	char *base = basecfg(cfgfile);
 	char *backup_directory = (char*)"/home/pjreddie/backup/";
@@ -818,7 +821,7 @@ void train_compare(char *cfgfile, char *weightfile)
 	args.type = COMPARE_DATA;
 
 	load_thread = load_data_in_thread(args);
-	int epoch = *net.seen / N;
+	int epoch = (int)(*net.seen / N);
 	int i = 0;
 	while (1) {
 		++i;
@@ -831,8 +834,8 @@ void train_compare(char *cfgfile, char *weightfile)
 		time = clock();
 		float loss = train_network(&net, train);
 		if (avg_loss == -1) avg_loss = loss;
-		avg_loss = avg_loss * .9 + loss * .1;
-		printf("%.3f: %f, %f avg, %lf seconds, %ld images\n", (float)*net.seen / N, loss, avg_loss, sec(clock() - time), *net.seen);
+		avg_loss = (float)(avg_loss * .9 + loss * .1);
+		printf("%.3f: %f, %f avg, %lf seconds, %d images\n", (float)*net.seen / N, loss, avg_loss, sec(clock() - time), (int)*net.seen);
 		free_data(train);
 		if (i % 100 == 0) {
 			char buff[256];
@@ -840,12 +843,12 @@ void train_compare(char *cfgfile, char *weightfile)
 			save_weights(&net, buff);
 		}
 		if (*net.seen / N > epoch) {
-			epoch = *net.seen / N;
+			epoch = (int)(*net.seen / N);
 			i = 0;
 			char buff[256];
 			sprintf(buff, "%s/%s_%d.weights", backup_directory, base, epoch);
 			save_weights(&net, buff);
-			if (epoch % 22 == 0) net.learning_rate *= .1;
+			if (epoch % 22 == 0) net.learning_rate *= (float).1;
 		}
 	}
 	pthread_join(load_thread, 0);
@@ -863,7 +866,7 @@ void validate_compare(char *filename, char *weightfile)
 	if (weightfile) {
 		load_weights(&net, weightfile);
 	}
-	srand(time(0));
+	srand((unsigned int)time(0));
 
 	list *plist = get_paths((char*)"data/compare.val.list");
 	//list *plist = get_paths("data/compare.val.old");
@@ -962,10 +965,10 @@ int bbox_comparator(const void *a, const void *b)
 void bbox_update(sortable_bbox *a, sortable_bbox *b, int class_n, int result)
 {
 	int k = 32;
-	float EA = 1. / (1 + pow(10, (b->elos[class_n] - a->elos[class_n]) / 400.));
-	float EB = 1. / (1 + pow(10, (a->elos[class_n] - b->elos[class_n]) / 400.));
-	float SA = result ? 1 : 0;
-	float SB = result ? 0 : 1;
+	float EA = (float)(1. / (1 + pow(10, (b->elos[class_n] - a->elos[class_n]) / 400.)));
+	float EB = (float)(1. / (1 + pow(10, (a->elos[class_n] - b->elos[class_n]) / 400.)));
+	float SA = (float)(result ? 1 : 0);
+	float SB = (float)(result ? 0 : 1);
 	a->elos[class_n] += k * (SA - EA);
 	b->elos[class_n] += k * (SB - EB);
 }
@@ -1000,7 +1003,7 @@ void SortMaster3000(char *filename, char *weightfile)
 	if (weightfile) {
 		load_weights(&net, weightfile);
 	}
-	srand(time(0));
+	srand((unsigned int)time(0));
 	set_batch_network(&net, 1);
 
 	list *plist = get_paths((char*)"data/compare.sort.list");
@@ -1032,7 +1035,7 @@ void BattleRoyaleWithCheese(char *filename, char *weightfile)
 	if (weightfile) {
 		load_weights(&net, weightfile);
 	}
-	srand(time(0));
+	srand((unsigned int)time(0));
 	set_batch_network(&net, 1);
 
 	list *plist = get_paths((char*)"data/compare.sort.list");
@@ -1128,7 +1131,6 @@ void run_compare(int argc, char **argv)
 
 //cuda.c
 int gpu_index = 0;
-
 #ifdef GPU
 
 #include "cuda.h"
@@ -1503,8 +1505,8 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 
 		if (flip) {
 			float swap = boxes[i].left;
-			boxes[i].left = 1. - boxes[i].right;
-			boxes[i].right = 1. - swap;
+			boxes[i].left = (float)(1. - boxes[i].right);
+			boxes[i].right = (float)(1. - swap);
 		}
 
 		boxes[i].left = constrain(0, 1, boxes[i].left);
@@ -1615,12 +1617,12 @@ void load_rle(image im, int *rle, int n)
 	int i, j;
 	for (i = 0; i < n; ++i) {
 		for (j = 0; j < rle[i]; ++j) {
-			im.data[count++] = curr;
+			im.data[count++] = (float)curr;
 		}
 		curr = 1 - curr;
 	}
 	for (; count < im.h*im.w*im.c; ++count) {
-		im.data[count] = curr;
+		im.data[count] = (float)curr;
 	}
 }
 
@@ -1664,7 +1666,7 @@ box bound_image(image im)
 			}
 		}
 	}
-	box b = { minx, miny, maxx - minx + 1, maxy - miny + 1 };
+	box b = { (float)minx, (float)miny, (float)(maxx - minx + 1), (float)(maxy - miny + 1) };
 	//printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 	return b;
 }
@@ -1692,7 +1694,7 @@ void fill_truth_iseg(char *path, int num_boxes, float *truth, int classes, int w
 		if (flip) flip_image(sized);
 
 		image mask = resize_image(sized, mw, mh);
-		truth[i*(mw*mh + 1)] = id;
+		truth[i*(mw*mh + 1)] = (float)id;
 		for (j = 0; j < mw*mh; ++j) {
 			truth[i*(mw*mh + 1) + 1 + j] = mask.data[j];
 		}
@@ -1729,17 +1731,17 @@ void fill_truth_mask(char *path, int num_boxes, float *truth, int classes, int w
 		if (flip) flip_image(sized);
 		box b = bound_image(sized);
 		if (b.w > 0) {
-			image crop = crop_image(sized, b.x, b.y, b.w, b.h);
+			image crop = crop_image(sized, (int)b.x, (int)b.y, (int)b.w, (int)b.h);
 			image mask = resize_image(crop, mw, mh);
-			truth[i*(4 + mw * mh + 1) + 0] = (b.x + b.w / 2.) / sized.w;
-			truth[i*(4 + mw * mh + 1) + 1] = (b.y + b.h / 2.) / sized.h;
+			truth[i*(4 + mw * mh + 1) + 0] = (float)((b.x + b.w / 2.) / sized.w);
+			truth[i*(4 + mw * mh + 1) + 1] = (float)((b.y + b.h / 2.) / sized.h);
 			truth[i*(4 + mw * mh + 1) + 2] = b.w / sized.w;
 			truth[i*(4 + mw * mh + 1) + 3] = b.h / sized.h;
 			int j;
 			for (j = 0; j < mw*mh; ++j) {
 				truth[i*(4 + mw * mh + 1) + 4 + j] = mask.data[j];
 			}
-			truth[i*(4 + mw * mh + 1) + 4 + mw * mh] = id;
+			truth[i*(4 + mw * mh + 1) + 4 + mw * mh] = (float)id;
 			free_image(crop);
 			free_image(mask);
 			++i;
@@ -1789,7 +1791,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
 		truth[(i - sub) * 5 + 1] = y;
 		truth[(i - sub) * 5 + 2] = w;
 		truth[(i - sub) * 5 + 3] = h;
-		truth[(i - sub) * 5 + 4] = id;
+		truth[(i - sub) * 5 + 4] = (float)id;
 	}
 	free(boxes);
 }
@@ -2191,13 +2193,13 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
 		int oh = orig.h;
 		int ow = orig.w;
 
-		int dw = (ow*jitter);
-		int dh = (oh*jitter);
+		int dw = (int)(ow*jitter);
+		int dh = (int)(oh*jitter);
 
-		int pleft = rand_uniform(-dw, dw);
-		int pright = rand_uniform(-dw, dw);
-		int ptop = rand_uniform(-dh, dh);
-		int pbot = rand_uniform(-dh, dh);
+		int pleft = (int)rand_uniform((float)-dw, (float)dw);
+		int pright = (int)rand_uniform((float)-dw, (float)dw);
+		int ptop = (int)rand_uniform((float)-dh, (float)dh);
+		int pbot = (int)rand_uniform((float)-dh, (float)dh);
 
 		int swidth = ow - pleft - pright;
 		int sheight = oh - ptop - pbot;
@@ -2216,7 +2218,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
 		random_distort_image(sized, hue, saturation, exposure);
 		d.X.vals[i] = sized.data;
 
-		fill_truth_region(random_paths[i], d.y.vals[i], classes, size, flip, dx, dy, 1. / sx, 1. / sy);
+		fill_truth_region(random_paths[i], d.y.vals[i], classes, size, flip, dx, dy, (float)(1. / sx), (float)(1. / sy));
 
 		free_image(orig);
 		free_image(cropped);
@@ -2312,13 +2314,13 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
 	int k = (4 + classes) * 90;
 	d.y = make_matrix(1, k);
 
-	int dw = w * jitter;
-	int dh = h * jitter;
+	int dw = (int)(w * jitter);
+	int dh = (int)(h * jitter);
 
-	int pleft = rand_uniform(-dw, dw);
-	int pright = rand_uniform(-dw, dw);
-	int ptop = rand_uniform(-dh, dh);
-	int pbot = rand_uniform(-dh, dh);
+	int pleft = (int)rand_uniform((float)-dw, (float)dw);
+	int pright = (int)rand_uniform((float)-dw, (float)dw);
+	int ptop = (int)rand_uniform((float)-dh, (float)dh);
+	int pbot = (int)rand_uniform((float)-dh, (float)dh);
 
 	int swidth = w - pleft - pright;
 	int sheight = h - ptop - pbot;
@@ -2336,7 +2338,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
 	if (flip) flip_image(sized);
 	d.X.vals[0] = sized.data;
 
-	fill_truth_swag(random_path, d.y.vals[0], classes, flip, dx, dy, 1. / sx, 1. / sy);
+	fill_truth_swag(random_path, d.y.vals[0], classes, flip, dx, dy, (float)(1. / sx), (float)(1. / sy));
 
 	free_image(orig);
 	free_image(cropped);
@@ -2382,7 +2384,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 		float dx = rand_uniform(0, w - nw);
 		float dy = rand_uniform(0, h - nh);
 
-		place_image(orig, nw, nh, dx, dy, sized);
+		place_image(orig, (int)nw, (int)nh, (int)dx, (int)dy, sized);
 
 		random_distort_image(sized, hue, saturation, exposure);
 
@@ -2763,10 +2765,10 @@ data load_cifar10_data(char *filename)
 		int class_n = bytes[0];
 		y.vals[i][class_n] = 1;
 		for (j = 0; j < X.cols; ++j) {
-			X.vals[i][j] = (double)bytes[j + 1];
+			X.vals[i][j] = (float)(double)bytes[j + 1];
 		}
 	}
-	scale_data_rows(d, 1. / 255);
+	scale_data_rows(d, (float)(1. / 255));
 	//normalize_data_rows(d);
 	fclose(fp);
 	return d;
@@ -2795,8 +2797,8 @@ void get_next_batch(data d, int n, int offset, float *X, float *y)
 void smooth_data(data d)
 {
 	int i, j;
-	float scale = 1. / d.y.cols;
-	float eps = .1;
+	float scale = (float)(1. / d.y.cols);
+	float eps = (float).1;
 	for (i = 0; i < d.y.rows; ++i) {
 		for (j = 0; j < d.y.cols; ++j) {
 			d.y.vals[i][j] = eps * scale + (1 - eps) * d.y.vals[i][j];
@@ -2826,13 +2828,13 @@ data load_all_cifar10()
 			int class_n = bytes[0];
 			y.vals[i + b * 10000][class_n] = 1;
 			for (j = 0; j < X.cols; ++j) {
-				X.vals[i + b * 10000][j] = (double)bytes[j + 1];
+				X.vals[i + b * 10000][j] = (float)(double)bytes[j + 1];
 			}
 		}
 		fclose(fp);
 	}
 	//normalize_data_rows(d);
-	scale_data_rows(d, 1. / 255);
+	scale_data_rows(d, (float)(1. / 255));
 	smooth_data(d);
 	return d;
 }
@@ -3050,7 +3052,7 @@ namespace cv
 			for (i = 0; i < h; ++i) {
 				for (k = 0; k < c; ++k) {
 					for (j = 0; j < w; ++j) {
-						im.data[k*w*h + i * w + j] = data[i*step + j * c + k] / 255.;
+						im.data[k*w*h + i * w + j] = (float)(data[i*step + j * c + k] / 255.);
 					}
 				}
 			}
@@ -3189,7 +3191,7 @@ detection *avg_predictions(network *net, int *nboxes)
 	int count = 0;
 	fill_cpu(demo_total, 0, avg, 1);
 	for (j = 0; j < demo_frame; ++j) {
-		axpy_cpu(demo_total, 1. / demo_frame, predictions[j], 1, avg, 1);
+		axpy_cpu(demo_total, (float)(1. / demo_frame), predictions[j], 1, avg, 1);
 	}
 	for (i = 0; i < net->n; ++i) {
 		layer l = net->layers[i];
@@ -3205,7 +3207,7 @@ detection *avg_predictions(network *net, int *nboxes)
 void *detect_in_thread(void *ptr)
 {
 	running = 1;
-	float nms = .4;
+	float nms = (float).4;
 
 	layer l = net->layers[net->n - 1];
 	float *X = buff_letter[(buff_index + 2) % 3].data;
@@ -3278,17 +3280,17 @@ void *display_in_thread(void *ptr)
 		return 0;
 	}
 	else if (c == 82) {
-		demo_thresh += .02;
+		demo_thresh += (float).02;
 	}
 	else if (c == 84) {
-		demo_thresh -= .02;
-		if (demo_thresh <= .02) demo_thresh = .02;
+		demo_thresh -= (float).02;
+		if (demo_thresh <= .02) demo_thresh = (float).02;
 	}
 	else if (c == 83) {
-		demo_hier += .02;
+		demo_hier += (float).02;
 	}
 	else if (c == 81) {
-		demo_hier -= .02;
+		demo_hier -= (float).02;
 		if (demo_hier <= .0) demo_hier = .0;
 	}
 	return 0;
@@ -3365,7 +3367,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 		if (!prefix) {
 			auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
-			fps = 1. / elapsed_seconds.count();
+			fps = (float)(1. / elapsed_seconds.count());
 
 			start = std::chrono::system_clock::now();
 			display_in_thread(0);
@@ -3860,8 +3862,8 @@ float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
 float get_color(int c, int x, int max)
 {
 	float ratio = ((float)x / max) * 5;
-	int i = floor(ratio);
-	int j = ceil(ratio);
+	int i = (int)floor(ratio);
+	int j = (int)ceil(ratio);
 	ratio -= i;
 	float r = (1 - ratio) * colors[i][c] + ratio * colors[j][c];
 	//printf("%f\n", r);
@@ -3984,7 +3986,7 @@ image get_label(image **characters, char *string, int size)
 		label = n;
 		++string;
 	}
-	image b = border_image(label, label.h*.25);
+	image b = border_image(label, (int)(label.h*.25));
 	free_image(label);
 	return b;
 }
@@ -4052,10 +4054,10 @@ void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, flo
 
 void draw_bbox(image a, box bbox, int w, float r, float g, float b)
 {
-	int left = (bbox.x - bbox.w / 2)*a.w;
-	int right = (bbox.x + bbox.w / 2)*a.w;
-	int top = (bbox.y - bbox.h / 2)*a.h;
-	int bot = (bbox.y + bbox.h / 2)*a.h;
+	int left = (int)((bbox.x - bbox.w / 2)*a.w);
+	int right = (int)((bbox.x + bbox.w / 2)*a.w);
+	int top = (int)((bbox.y - bbox.h / 2)*a.h);
+	int bot = (int)((bbox.y + bbox.h / 2)*a.h);
 
 	int i;
 	for (i = 0; i < w; ++i) {
@@ -4104,7 +4106,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
 			}
 		}
 		if (class_n >= 0) {
-			int width = im.h * .006;
+			int width = (int)(im.h * .006);
 
 			/*
 			   if(0){
@@ -4128,10 +4130,10 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
 			box b = dets[i].bbox;
 			//printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
-			int left = (b.x - b.w / 2.)*im.w;
-			int right = (b.x + b.w / 2.)*im.w;
-			int top = (b.y - b.h / 2.)*im.h;
-			int bot = (b.y + b.h / 2.)*im.h;
+			int left = (int)((b.x - b.w / 2.)*im.w);
+			int right = (int)((b.x + b.w / 2.)*im.w);
+			int top = (int)((b.y - b.h / 2.)*im.h);
+			int bot = (int)((b.y + b.h / 2.)*im.h);
 
 			if (left < 0) left = 0;
 			if (right > im.w - 1) right = im.w - 1;
@@ -4140,13 +4142,13 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
 
 			draw_box_width(im, left, top, right, bot, width, red, green, blue);
 			if (alphabet) {
-				image label = get_label(alphabet, labelstr, (im.h*.03));
+				image label = get_label(alphabet, labelstr, (int)(im.h*.03));
 				draw_label(im, top + width, left, label, rgb);
 				free_image(label);
 			}
 			if (dets[i].mask) {
 				image mask = float_to_image(14, 14, 1, dets[i].mask);
-				image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
+				image resized_mask = resize_image(mask, (int)(b.w*im.w), (int)(b.h*im.h));
 				image tmask = threshold_image(resized_mask, .5);
 				embed_image(tmask, im, left, top);
 				free_image(mask);
@@ -4228,11 +4230,12 @@ image image_distance(image a, image b)
 void ghost_image(image source, image dest, int dx, int dy)
 {
 	int x, y, k;
-	float max_dist = sqrt((-source.w / 2. + .5)*(-source.w / 2. + .5));
+	float max_dist = (float)(sqrt((-source.w / 2. + .5)*(-source.w / 2. + .5)));
 	for (k = 0; k < source.c; ++k) {
 		for (y = 0; y < source.h; ++y) {
 			for (x = 0; x < source.w; ++x) {
-				float dist = sqrt((x - source.w / 2. + .5)*(x - source.w / 2. + .5) + (y - source.h / 2. + .5)*(y - source.h / 2. + .5));
+				float dist = (float)(sqrt((x - source.w / 2. + .5)*(x - source.w / 2. + .5) + 
+					(y - source.h / 2. + .5)*(y - source.h / 2. + .5)));
 				float alpha = (1 - dist / max_dist);
 				if (alpha < 0) alpha = 0;
 				float v1 = get_pixel(source, x, y, k);
@@ -4466,7 +4469,7 @@ image make_random_image(int w, int h, int c)
 	out.data = (float*)calloc(h*w*c, sizeof(float));
 	int i;
 	for (i = 0; i < w*h*c; ++i) {
-		out.data[i] = (rand_normal() * .25) + .5;
+		out.data[i] = (float)((rand_normal() * .25) + .5);
 	}
 	return out;
 }
@@ -4505,14 +4508,16 @@ image center_crop_image(image im, int w, int h)
 image rotate_crop_image(image im, float rad, float s, int w, int h, float dx, float dy, float aspect)
 {
 	int x, y, c;
-	float cx = im.w / 2.;
-	float cy = im.h / 2.;
+	float cx = (float)(im.w / 2.);
+	float cy = (float)(im.h / 2.);
 	image rot = make_image(w, h, im.c);
 	for (c = 0; c < im.c; ++c) {
 		for (y = 0; y < h; ++y) {
 			for (x = 0; x < w; ++x) {
-				float rx = cos(rad)*((x - w / 2.) / s * aspect + dx / s * aspect) - sin(rad)*((y - h / 2.) / s + dy / s) + cx;
-				float ry = sin(rad)*((x - w / 2.) / s * aspect + dx / s * aspect) + cos(rad)*((y - h / 2.) / s + dy / s) + cy;
+				float rx = (float)(cos(rad)*((x - w / 2.) / s * aspect + dx / s * aspect) - 
+					sin(rad)*((y - h / 2.) / s + dy / s) + cx);
+				float ry = (float)(sin(rad)*((x - w / 2.) / s * aspect + dx / s * aspect) + 
+					cos(rad)*((y - h / 2.) / s + dy / s) + cy);
 				float val = bilinear_interpolate(im, rx, ry, c);
 				set_pixel(rot, x, y, c, val);
 			}
@@ -4524,8 +4529,8 @@ image rotate_crop_image(image im, float rad, float s, int w, int h, float dx, fl
 image rotate_image(image im, float rad)
 {
 	int x, y, c;
-	float cx = im.w / 2.;
-	float cy = im.h / 2.;
+	float cx = (float)(im.w / 2.);
+	float cy = (float)(im.h / 2.);
 	image rot = make_image(im.w, im.h, im.c);
 	for (c = 0; c < im.c; ++c) {
 		for (y = 0; y < im.h; ++y) {
@@ -4581,7 +4586,7 @@ image crop_image(image im, int dx, int dy, int w, int h)
 int best_3d_shift_r(image a, image b, int min, int max)
 {
 	if (min == max) return min;
-	int mid = floor((min + max) / 2.);
+	int mid = (int)floor((min + max) / 2.);
 	image c1 = crop_image(b, 0, mid, b.w, b.h);
 	image c2 = crop_image(b, 0, mid + 1, b.w, b.h);
 	float d1 = dist_array(c1.data, a.data, a.w*a.h*a.c, 10);
@@ -4727,13 +4732,13 @@ augment_args random_augment_args(image im, float angle, float aspect, int low, i
 	augment_args a = { 0 };
 	aspect = rand_scale(aspect);
 	int r = rand_int(low, high);
-	int min = (im.h < im.w*aspect) ? im.h : im.w*aspect;
+	int min = (int)((im.h < im.w*aspect) ? im.h : im.w*aspect);
 	float scale = (float)r / min;
 
-	float rad = rand_uniform(-angle, angle) * TWO_PI / 360.;
+	float rad = (float)(rand_uniform(-angle, angle) * TWO_PI / 360.);
 
-	float dx = (im.w*scale / aspect - w) / 2.;
-	float dy = (im.h*scale - w) / 2.;
+	float dx = (float)((im.w*scale / aspect - w) / 2.);
+	float dy = (float)((im.h*scale - w) / 2.);
 	//if(dx < 0) dx = 0;
 	//if(dy < 0) dy = 0;
 	dx = rand_uniform(-dx, dx);
@@ -4778,9 +4783,9 @@ void yuv_to_rgb(image im)
 			u = get_pixel(im, i, j, 1);
 			v = get_pixel(im, i, j, 2);
 
-			r = y + 1.13983*v;
-			g = y + -.39465*u + -.58060*v;
-			b = y + 2.03211*u;
+			r = (float)(y + 1.13983*v);
+			g = (float)(y + -.39465*u + -.58060*v);
+			b = (float)(y + 2.03211*u);
 
 			set_pixel(im, i, j, 0, r);
 			set_pixel(im, i, j, 1, g);
@@ -4801,9 +4806,9 @@ void rgb_to_yuv(image im)
 			g = get_pixel(im, i, j, 1);
 			b = get_pixel(im, i, j, 2);
 
-			y = .299*r + .587*g + .114*b;
-			u = -.14713*r + -.28886*g + .436*b;
-			v = .615*r + -.51499*g + -.10001*b;
+			y = (float)(.299*r + .587*g + .114*b);
+			u = (float)(-.14713*r + -.28886*g + .436*b);
+			v = (float)(.615*r + -.51499*g + -.10001*b);
 
 			set_pixel(im, i, j, 0, y);
 			set_pixel(im, i, j, 1, u);
@@ -4844,7 +4849,7 @@ void rgb_to_hsv(image im)
 					h = 4 + (r - g) / delta;
 				}
 				if (h < 0) h += 6;
-				h = h / 6.;
+				h = (float)(h / 6.);
 			}
 			set_pixel(im, i, j, 0, h);
 			set_pixel(im, i, j, 1, s);
@@ -4869,7 +4874,7 @@ void hsv_to_rgb(image im)
 				r = g = b = v;
 			}
 			else {
-				int index = floor(h);
+				int index = (int)floor(h);
 				f = h - index;
 				p = v * (1 - s);
 				q = v * (1 - s * f);
@@ -4904,7 +4909,7 @@ void grayscale_image_3c(image im)
 {
 	assert(im.c == 3);
 	int i, j, k;
-	float scale[] = { 0.299, 0.587, 0.114 };
+	float scale[] = { (float)0.299, (float)0.587, (float)0.114 };
 	for (j = 0; j < im.h; ++j) {
 		for (i = 0; i < im.w; ++i) {
 			float val = 0;
@@ -4923,7 +4928,7 @@ image grayscale_image(image im)
 	assert(im.c == 3);
 	int i, j, k;
 	image gray = make_image(im.w, im.h, 1);
-	float scale[] = { 0.299, 0.587, 0.114 };
+	float scale[] = { (float)0.299, (float)0.587, (float)0.114 };
 	for (k = 0; k < im.c; ++k) {
 		for (j = 0; j < im.h; ++j) {
 			for (i = 0; i < im.w; ++i) {
@@ -4939,7 +4944,7 @@ image threshold_image(image im, float thresh)
 	int i;
 	image t = make_image(im.w, im.h, im.c);
 	for (i = 0; i < im.w*im.h*im.c; ++i) {
-		t.data[i] = im.data[i] > thresh ? 1 : 0;
+		t.data[i] = (float)(im.data[i] > thresh ? 1 : 0);
 	}
 	return t;
 }
@@ -5114,10 +5119,10 @@ void test_resize(char *filename)
 	image c2 = copy_image(im);
 	image c3 = copy_image(im);
 	image c4 = copy_image(im);
-	distort_image(c1, .1, 1.5, 1.5);
-	distort_image(c2, -.1, .66666, .66666);
-	distort_image(c3, .1, 1.5, .66666);
-	distort_image(c4, .1, .66666, 1.5);
+	distort_image(c1, (float).1, (float)1.5, (float)1.5);
+	distort_image(c2, (float)-.1, (float).66666, (float).66666);
+	distort_image(c3, (float).1, (float)1.5, (float).66666);
+	distort_image(c4, (float).1, (float).66666, (float)1.5);
 
 
 	show_image(im, "Original", 1);
@@ -5133,9 +5138,9 @@ void test_resize(char *filename)
 		free_image(aug);
 
 
-		float exposure = 1.15;
-		float saturation = 1.15;
-		float hue = .05;
+		float exposure = (float)1.15;
+		float saturation = (float)1.15;
+		float hue = (float).05;
 
 		image c = copy_image(im);
 
@@ -5168,7 +5173,7 @@ image load_image_stb(char *filename, int channels)
 			for (i = 0; i < w; ++i) {
 				int dst_index = i + w * j + w * h*k;
 				int src_index = k + c * i + c * w*j;
-				im.data[dst_index] = (float)data[src_index] / 255.;
+				im.data[dst_index] = (float)(data[src_index] / 255.);
 			}
 		}
 	}
@@ -5797,7 +5802,7 @@ float get_current_rate(network *net)
 	case CONSTANT:
 		return net->learning_rate;
 	case STEP:
-		return net->learning_rate * pow(net->scale, batch_num / net->step);
+		return (float)(net->learning_rate * pow(net->scale, batch_num / net->step));
 	case STEPS:
 		rate = net->learning_rate;
 		for (i = 0; i < net->num_steps; ++i) {
@@ -5806,13 +5811,13 @@ float get_current_rate(network *net)
 		}
 		return rate;
 	case EXP:
-		return net->learning_rate * pow(net->gamma, batch_num);
+		return (float)(net->learning_rate * pow(net->gamma, batch_num));
 	case POLY:
 		return net->learning_rate * pow(1 - (float)batch_num / net->max_batches, net->power);
 	case RANDOM:
 		return net->learning_rate * pow(rand_uniform(0, 1), net->power);
 	case SIG:
-		return net->learning_rate * (1. / (1. + exp(net->gamma*(batch_num - net->step))));
+		return (float)(net->learning_rate * (1. / (1. + exp(net->gamma*(batch_num - net->step)))));
 	default:
 		fprintf(stderr, "Policy is weird!\n");
 		return net->learning_rate;
@@ -6388,8 +6393,8 @@ void compare_networks(network *n1, network *n2, data test)
 		}
 	}
 	printf("%5d %5d\n%5d %5d\n", a, b, c, d);
-	float num = pow((abs(b - c) - 1.), 2.);
-	float den = b + c;
+	float num = (float)(pow((abs(b - c) - 1.), 2.));
+	float den = (float)(b + c);
 	printf("%f\n", num / den);
 }
 
@@ -6855,6 +6860,7 @@ void pull_network_output(network *net)
 
 
 //option_list.c
+//Option_list.c dedicates in finding the value under the key word in Configure File
 list *read_data_cfg(char *filename)
 {
 	FILE *file = fopen(filename, "r");
@@ -6940,6 +6946,7 @@ void option_unused(list *l)
 	}
 }
 
+//Find the key and return value
 char *option_find(list *l, char *key)
 {
 	node *n = l->front;
@@ -6953,6 +6960,9 @@ char *option_find(list *l, char *key)
 	}
 	return 0;
 }
+
+//The thid parameter stands for  'default', whick would be return if no value found under the key
+//(Would returen a message if using default value)
 char *option_find_str(list *l, char *key, char *def)
 {
 	char *v = option_find(l, key);
@@ -6969,6 +6979,7 @@ int option_find_int(list *l, char *key, int def)
 	return def;
 }
 
+//The '_quiet' stands for no output message if 'default' value had been adopted
 int option_find_int_quiet(list *l, char *key, int def)
 {
 	char *v = option_find(l, key);
@@ -6979,14 +6990,14 @@ int option_find_int_quiet(list *l, char *key, int def)
 float option_find_float_quiet(list *l, char *key, float def)
 {
 	char *v = option_find(l, key);
-	if (v) return atof(v);
+	if (v) return (float)atof(v);
 	return def;
 }
 
 float option_find_float(list *l, char *key, float def)
 {
 	char *v = option_find(l, key);
-	if (v) return atof(v);
+	if (v) return (float)atof(v);
 	fprintf(stderr, "%s: Using default '%lf'\n", key, def);
 	return def;
 }
@@ -7122,31 +7133,40 @@ layer parse_deconvolutional(list *options, size_params params)
 
 convolutional_layer parse_convolutional(list *options, size_params params)
 {
+	//eg. n equals to the value under the key "filters", 
+	//if value not found, set the value to 'default', which is 1 in this case, and print a message
 	int n = option_find_int(options, (char*)"filters", 1);
+	//Get the kernel size
 	int size = option_find_int(options, (char*)"size", 1);
 	int stride = option_find_int(options, (char*)"stride", 1);
 	int pad = option_find_int_quiet(options, (char*)"pad", 0);
 	int padding = option_find_int_quiet(options, (char*)"padding", 0);
+
+	//The total number of weights is calculated as:
+	//input_channel / groups * filer_channel * kernel_size * kernel_size
 	int groups = option_find_int_quiet(options, (char*)"groups", 1);
 	if (pad) padding = size / 2;
 
 	char *activation_s = option_find_str(options, (char*)"activation", (char*)"logistic");
 	ACTIVATION activation = get_activation(activation_s);
 
+	//Get the input size from the previous layer
 	int batch, h, w, c;
 	h = params.h;
 	w = params.w;
 	c = params.c;
 	batch = params.batch;
-	if (!(h && w && c)) error("Layer before convolutional layer must output image.");
+	if (!(h && w && c)) 
+		error("Layer before convolutional layer must output image.");
 	int batch_normalize = option_find_int_quiet(options, (char*)"batch_normalize", 0);
 	int binary = option_find_int_quiet(options, (char*)"binary", 0);
 	int xnor = option_find_int_quiet(options, (char*)"xnor", 0);
 
-	convolutional_layer layer = make_convolutional_layer(batch, h, w, c, n, groups, size, stride, padding, activation, batch_normalize, binary, xnor, params.net->adam);
+	//Construct the layer
+	convolutional_layer layer = make_convolutional_layer(batch, h, w, c, n, groups, size, 
+		stride, padding, activation, batch_normalize, binary, xnor, params.net->adam);
 	layer.flipped = option_find_int_quiet(options, (char*)"flipped", 0);
 	layer.dot = option_find_float_quiet(options, (char*)"dot", 0);
-
 	return layer;
 }
 
@@ -7221,7 +7241,7 @@ layer parse_softmax(list *options, size_params params)
 	l.w = params.w;
 	l.h = params.h;
 	l.c = params.c;
-	l.spatial = option_find_float_quiet(options, (char*)"spatial", 0);
+	l.spatial = (int)option_find_float_quiet(options, (char*)"spatial", 0);
 	l.noloss = option_find_int_quiet(options, (char*)"noloss", 0);
 	return l;
 }
@@ -7230,7 +7250,7 @@ int *parse_yolo_mask(char *a, int *num)
 {
 	int *mask = 0;
 	if (a) {
-		int len = strlen(a);
+		int len = (int)strlen(a);
 		int n = 1;
 		int i;
 		for (i = 0; i < len; ++i) {
@@ -7259,7 +7279,7 @@ layer parse_yolo(list *options, size_params params)
 	assert(l.outputs == params.inputs);
 
 	l.max_boxes = option_find_int_quiet(options, (char*)"max", 90);
-	l.jitter = option_find_float(options, (char*)"jitter", .2);
+	l.jitter = option_find_float(options, (char*)"jitter", (float).2);
 
 	l.ignore_thresh = option_find_float(options, (char*)"ignore_thresh", .5);
 	l.truth_thresh = option_find_float(options, (char*)"truth_thresh", 1);
@@ -7270,14 +7290,14 @@ layer parse_yolo(list *options, size_params params)
 
 	a = option_find_str(options, (char*)"anchors", 0);
 	if (a) {
-		int len = strlen(a);
+		int len = (int)strlen(a);
 		int n = 1;
 		int i;
 		for (i = 0; i < len; ++i) {
 			if (a[i] == ',') ++n;
 		}
 		for (i = 0; i < n; ++i) {
-			float bias = atof(a);
+			float bias = (float)atof(a);
 			l.biases[i] = bias;
 			a = strchr(a, ',') + 1;
 		}
@@ -7309,7 +7329,7 @@ layer parse_region(list *options, size_params params)
 	l.softmax = option_find_int(options, (char*)"softmax", 0);
 	l.background = option_find_int_quiet(options, (char*)"background", 0);
 	l.max_boxes = option_find_int_quiet(options, (char*)"max", 30);
-	l.jitter = option_find_float(options, (char*)"jitter", .2);
+	l.jitter = option_find_float(options, (char*)"jitter", (float).2);
 	l.rescore = option_find_int_quiet(options, (char*)"rescore", 0);
 
 	l.thresh = option_find_float(options, (char*)"thresh", .5);
@@ -7331,14 +7351,14 @@ layer parse_region(list *options, size_params params)
 
 	char *a = option_find_str(options, (char*)"anchors", 0);
 	if (a) {
-		int len = strlen(a);
+		int len = (int)strlen(a);
 		int n = 1;
 		int i;
 		for (i = 0; i < len; ++i) {
 			if (a[i] == ',') ++n;
 		}
 		for (i = 0; i < n; ++i) {
-			float bias = atof(a);
+			float bias = (float)atof(a);
 			l.biases[i] = bias;
 			a = strchr(a, ',') + 1;
 		}
@@ -7364,7 +7384,7 @@ detection_layer parse_detection(list *options, size_params params)
 	layer.object_scale = option_find_float(options, (char*)"object_scale", 1);
 	layer.noobject_scale = option_find_float(options, (char*)"noobject_scale", 1);
 	layer.class_scale = option_find_float(options, (char*)"class_scale", 1);
-	layer.jitter = option_find_float(options, (char*)"jitter", .2);
+	layer.jitter = option_find_float(options, (char*)"jitter", (float).2);
 	layer.random = option_find_int_quiet(options, (char*)"random", 0);
 	layer.reorg = option_find_int_quiet(options, (char*)"reorg", 0);
 	return layer;
@@ -7466,7 +7486,7 @@ dropout_layer parse_dropout(list *options, size_params params)
 
 layer parse_normalization(list *options, size_params params)
 {
-	float alpha = option_find_float(options, (char*)"alpha", .0001);
+	float alpha = option_find_float(options, (char*)"alpha", (float).0001);
 	float beta = option_find_float(options, (char*)"beta", .75);
 	float kappa = option_find_float(options, (char*)"kappa", 1);
 	int size = option_find_int(options, (char*)"size", 5);
@@ -7543,7 +7563,7 @@ layer parse_upsample(list *options, size_params params, network *net)
 route_layer parse_route(list *options, size_params params, network *net)
 {
 	char *l = option_find(options, (char*)"layers");
-	int len = strlen(l);
+	int len = (int)strlen(l);
 	if (!l) error("Route Layer must specify input layers");
 	int n = 1;
 	int i;
@@ -7598,9 +7618,9 @@ learning_rate_policy get_policy(char *s)
 void parse_net_options(list *options, network *net)
 {
 	net->batch = option_find_int(options, (char*)"batch", 1);
-	net->learning_rate = option_find_float(options, (char*)"learning_rate", .001);
-	net->momentum = option_find_float(options, (char*)"momentum", .9);
-	net->decay = option_find_float(options, (char*)"decay", .0001);
+	net->learning_rate = option_find_float(options, (char*)"learning_rate", (float).001);
+	net->momentum = option_find_float(options, (char*)"momentum", (float).9);
+	net->decay = option_find_float(options, (char*)"decay", (float).0001);
 	int subdivs = option_find_int(options, (char*)"subdivisions", 1);
 	net->time_steps = option_find_int_quiet(options, (char*)"time_steps", 1);
 	net->notruth = option_find_int_quiet(options, (char*)"notruth", 0);
@@ -7611,9 +7631,9 @@ void parse_net_options(list *options, network *net)
 
 	net->adam = option_find_int_quiet(options, (char*)"adam", 0);
 	if (net->adam) {
-		net->B1 = option_find_float(options, (char*)"B1", .9);
-		net->B2 = option_find_float(options, (char*)"B2", .999);
-		net->eps = option_find_float(options, (char*)"eps", .0000001);
+		net->B1 = option_find_float(options, (char*)"B1", (float).9);
+		net->B2 = option_find_float(options, (char*)"B2", (float).999);
+		net->eps = option_find_float(options, (char*)"eps", (float).0000001);
 	}
 
 	net->h = option_find_int_quiet(options, (char*)"height", 0);
@@ -7648,7 +7668,7 @@ void parse_net_options(list *options, network *net)
 		char *p = option_find(options, (char*)"scales");
 		if (!l || !p) error("STEPS policy must have steps and scales in cfg file");
 
-		int len = strlen(l);
+		int len = (int)strlen(l);
 		int n = 1;
 		int i;
 		for (i = 0; i < len; ++i) {
@@ -7658,7 +7678,7 @@ void parse_net_options(list *options, network *net)
 		float *scales = (float*)calloc(n, sizeof(float));
 		for (i = 0; i < n; ++i) {
 			int step = atoi(l);
-			float scale = atof(p);
+			float scale = (float)atof(p);
 			l = strchr(l, ',') + 1;
 			p = strchr(p, ',') + 1;
 			steps[i] = step;
@@ -8464,7 +8484,7 @@ int *read_intlist(char *gpu_list, int *ngpus, int d)
 {
 	int *gpus = 0;
 	if (gpu_list) {
-		int len = strlen(gpu_list);
+		int len = (int)strlen(gpu_list);
 		*ngpus = 1;
 		int i;
 		for (i = 0; i < len; ++i) {
@@ -8579,7 +8599,7 @@ float find_float_arg(int argc, char **argv, char *arg, float def)
 	for (i = 0; i < argc - 1; ++i) {
 		if (!argv[i]) continue;
 		if (0 == strcmp(argv[i], arg)) {
-			def = atof(argv[i + 1]);
+			def = (float)atof(argv[i + 1]);
 			del_arg(argc, argv, i);
 			del_arg(argc, argv, i);
 			break;
@@ -8765,7 +8785,7 @@ char *fgetl(FILE *fp)
 	if (feof(fp)) return 0;
 	size_t size = 512;
 	char *line = (char*)malloc(size * sizeof(char));
-	if (!fgets(line, size, fp)) {
+	if (!fgets(line, (int)size, fp)) {
 		free(line);
 		return 0;
 	}
@@ -8777,13 +8797,13 @@ char *fgetl(FILE *fp)
 			size *= 2;
 			line = (char*)realloc(line, size * sizeof(char));
 			if (!line) {
-				printf("%ld\n", size);
+				printf("%d\n", (int)size);
 				malloc_error();
 			}
 		}
 		size_t readsize = size - curr;
 		if (readsize > INT_MAX) readsize = INT_MAX - 1;
-		fgets(&line[curr], readsize, fp);
+		fgets(&line[curr], (int)readsize, fp);
 		curr = strlen(line);
 	}
 	if (line[curr - 1] == '\n') line[curr - 1] = '\0';
@@ -8809,7 +8829,7 @@ int read_all_fail(int fd, char *buffer, size_t bytes)
 {
 	size_t n = 0;
 	while (n < bytes) {
-		int next = _read(fd, buffer + n, bytes - n);
+		int next = _read(fd, buffer + n, (unsigned int)(bytes - n));
 		if (next <= 0) return 1;
 		n += next;
 	}
@@ -8820,7 +8840,7 @@ int write_all_fail(int fd, char *buffer, size_t bytes)
 {
 	size_t n = 0;
 	while (n < bytes) {
-		size_t next = _write(fd, buffer + n, bytes - n);
+		size_t next = _write(fd, buffer + n, (unsigned int)(bytes - n));
 		if (next <= 0) return 1;
 		n += next;
 	}
@@ -8831,7 +8851,7 @@ void read_all(int fd, char *buffer, size_t bytes)
 {
 	size_t n = 0;
 	while (n < bytes) {
-		int next = _read(fd, buffer + n, bytes - n);
+		int next = _read(fd, buffer + n, (unsigned int)(bytes - n));
 		if (next <= 0) error("read failed");
 		n += next;
 	}
@@ -8841,7 +8861,7 @@ void write_all(int fd, char *buffer, size_t bytes)
 {
 	size_t n = 0;
 	while (n < bytes) {
-		size_t next = _write(fd, buffer + n, bytes - n);
+		size_t next = _write(fd, buffer + n, (unsigned int)(bytes - n));
 		if (next <= 0) error("write failed");
 		n += next;
 	}
@@ -8894,9 +8914,9 @@ float *parse_fields(char *line, int n)
 		done = (*c == '\0');
 		if (*c == ',' || done) {
 			*c = '\0';
-			field[count] = strtod(p, &end);
-			if (p == c) field[count] = nan("");
-			if (end != c && (end != c - 1 || *end != '\r')) field[count] = nan(""); //DOS file formats!
+			field[count] = (float)strtod(p, &end);
+			if (p == c) field[count] = (float)nan("");
+			if (end != c && (end != c - 1 || *end != '\r')) field[count] = (float)nan(""); //DOS file formats!
 			p = c + 1;
 			++count;
 		}
@@ -9020,7 +9040,7 @@ void scale_array(float *a, int n, float s)
 int sample_array(float *a, int n)
 {
 	float sum = sum_array(a, n);
-	scale_array(a, n, 1. / sum);
+	scale_array(a, n, (float)1. / sum);
 	float r = rand_uniform(0, 1);
 	int i;
 	for (i = 0; i < n; ++i) {
@@ -9087,7 +9107,7 @@ float rand_normal()
 	if (haveSpare)
 	{
 		haveSpare = 0;
-		return sqrt(rand1) * sin(rand2);
+		return (float)(sqrt(rand1) * sin(rand2));
 	}
 
 	haveSpare = 1;
@@ -9097,7 +9117,7 @@ float rand_normal()
 	rand1 = -2 * log(rand1);
 	rand2 = (rand() / ((double)RAND_MAX)) * TWO_PI;
 
-	return sqrt(rand1) * cos(rand2);
+	return (float)(sqrt(rand1) * cos(rand2));
 }
 
 /*
@@ -9137,7 +9157,7 @@ float rand_scale(float s)
 {
 	float scale = rand_uniform(1, s);
 	if (rand() % 2) return scale;
-	return 1. / scale;
+	return (float)(1. / scale);
 }
 
 float **one_hot_encode(float *a, int n, int k)

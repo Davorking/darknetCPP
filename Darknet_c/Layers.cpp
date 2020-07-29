@@ -17,6 +17,7 @@ layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
 	l.outputs = inputs;
 	l.batch = batch;
 
+
 	l.output = (float*)calloc(batch*inputs, sizeof(float));
 	l.delta = (float*)calloc(batch*inputs, sizeof(float));
 
@@ -377,7 +378,7 @@ void mean_delta_cpu(float *delta, float *variance, int batch, int filters, int s
 				mean_delta[i] += delta[index];
 			}
 		}
-		mean_delta[i] *= (-1. / sqrt(variance[i] + .00001f));
+		mean_delta[i] *= float((-1. / sqrt(variance[i] + .00001f)));
 	}
 }
 void  variance_delta_cpu(float *x, float *delta, float *mean, float *variance, int batch, int filters, int spatial, float *variance_delta)
@@ -392,7 +393,7 @@ void  variance_delta_cpu(float *x, float *delta, float *mean, float *variance, i
 				variance_delta[i] += delta[index] * (x[index] - mean[i]);
 			}
 		}
-		variance_delta[i] *= -.5 * pow(variance[i] + .00001f, (float)(-3. / 2.));
+		variance_delta[i] *= (float)(-.5 * pow(variance[i] + .00001f, (float)(-3. / 2.)));
 	}
 }
 void normalize_delta_cpu(float *x, float *mean, float *variance, float *mean_delta, float *variance_delta, int batch, int filters, int spatial, float *delta)
@@ -402,7 +403,9 @@ void normalize_delta_cpu(float *x, float *mean, float *variance, float *mean_del
 		for (f = 0; f < filters; ++f) {
 			for (k = 0; k < spatial; ++k) {
 				int index = j * filters*spatial + f * spatial + k;
-				delta[index] = delta[index] * 1. / (sqrt(variance[f] + .00001f)) + variance_delta[f] * 2. * (x[index] - mean[f]) / (spatial * batch) + mean_delta[f] / (spatial*batch);
+				delta[index] = (float)(delta[index] * 1. / (sqrt(variance[f] + .00001f)) + 
+					variance_delta[f] * 2. * (x[index] - mean[f]) / (spatial * batch) + 
+					mean_delta[f] / (spatial*batch));
 			}
 		}
 	}
@@ -421,10 +424,10 @@ void forward_batchnorm_layer(layer l, network net)
 		mean_cpu(l.output, l.batch, l.out_c, l.out_h*l.out_w, l.mean);
 		variance_cpu(l.output, l.mean, l.batch, l.out_c, l.out_h*l.out_w, l.variance);
 
-		scal_cpu(l.out_c, .99, l.rolling_mean, 1);
-		axpy_cpu(l.out_c, .01, l.mean, 1, l.rolling_mean, 1);
-		scal_cpu(l.out_c, .99, l.rolling_variance, 1);
-		axpy_cpu(l.out_c, .01, l.variance, 1, l.rolling_variance, 1);
+		scal_cpu(l.out_c, (float).99, l.rolling_mean, 1);
+		axpy_cpu(l.out_c, (float).01, l.mean, 1, l.rolling_mean, 1);
+		scal_cpu(l.out_c, (float).99, l.rolling_variance, 1);
+		axpy_cpu(l.out_c, (float).01, l.variance, 1, l.rolling_variance, 1);
 
 		normalize_cpu(l.output, l.mean, l.variance, l.batch, l.out_c, l.out_h*l.out_w);
 		copy_cpu(l.outputs*l.batch, l.output, 1, l.x_norm, 1);
@@ -600,7 +603,7 @@ layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activa
 	l.update = update_connected_layer;
 
 	//float scale = 1./sqrt(inputs);
-	float scale = sqrt(2. / inputs);
+	float scale = (float)(sqrt(2. / inputs));
 	for (i = 0; i < outputs*inputs; ++i) {
 		l.weights[i] = scale * rand_uniform(-1, 1);
 	}
@@ -759,7 +762,7 @@ void denormalize_connected_layer(layer l)
 {
 	int i, j;
 	for (i = 0; i < l.outputs; ++i) {
-		float scale = l.scales[i] / sqrt(l.rolling_variance[i] + .000001);
+		float scale = (float)(l.scales[i] / sqrt(l.rolling_variance[i] + .000001));
 		for (j = 0; j < l.inputs; ++j) {
 			l.weights[i*l.inputs + j] *= scale;
 		}
@@ -903,7 +906,7 @@ void backward_connected_layer_gpu(layer l, network net)
 
 
 
-//convolutinal_layer.c
+//convolutional_layer.c
 #ifdef AI2
 #include "xnor_layer.h"
 #endif
@@ -940,7 +943,7 @@ void binarize_cpu(float *input, int n, float *binary)
 {
 	int i;
 	for (i = 0; i < n; ++i) {
-		binary[i] = (input[i] > 0) ? 1 : -1;
+		binary[i] = (float)((input[i] > 0) ? 1 : -1);
 	}
 }
 
@@ -1069,12 +1072,16 @@ void cudnn_convolutional_setup(layer *l)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int groups, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam)
+//Construct The convolutional_layer
+convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, 
+	int groups, int size, int stride, int padding, ACTIVATION activation, 
+	int batch_normalize, int binary, int xnor, int adam)
 {
 	int i;
 	convolutional_layer l = {};
 	l.type = CONVOLUTIONAL;
 
+	//Read in the parameters
 	l.groups = groups;
 	l.h = h;
 	l.w = w;
@@ -1098,7 +1105,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 	l.nbiases = n;
 
 	// float scale = 1./sqrt(size*size*c);
-	float scale = sqrt(2. / (size*size*c / l.groups));
+	float scale = (float)(sqrt(2. / (size*size*c / l.groups)));
 	//printf("convscale %f\n", scale);
 	//scale = .02;
 	//for(i = 0; i < c*n*size*size; ++i) l.weights[i] = scale*rand_uniform(-1, 1);
@@ -1218,7 +1225,10 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 	l.workspace_size = get_workspace_size(l);
 	l.activation = activation;
 
-	fprintf(stderr, "conv  %5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d  %5.3f BFLOPs\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c, (2.0 * l.n * l.size*l.size*l.c / l.groups * l.out_h*l.out_w) / 1000000000.);
+	//Print the layer information
+	fprintf(stderr, "conv  %5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d  %5.3f BFLOPs\n", 
+		n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c, 
+		(2.0 * l.n * l.size*l.size*l.c / l.groups * l.out_h*l.out_w) / 1000000000.);
 
 	return l;
 }
@@ -1227,7 +1237,7 @@ void denormalize_convolutional_layer(convolutional_layer l)
 {
 	int i, j;
 	for (i = 0; i < l.n; ++i) {
-		float scale = l.scales[i] / sqrt(l.rolling_variance[i] + .00001);
+		float scale = (float)(l.scales[i] / sqrt(l.rolling_variance[i] + .00001));
 		for (j = 0; j < l.c / l.groups*l.size*l.size; ++j) {
 			l.weights[i*l.c / l.groups*l.size*l.size + j] *= scale;
 		}
@@ -2032,8 +2042,8 @@ void resize_crop_layer(layer *l, int w, int h)
 	l->w = w;
 	l->h = h;
 
-	l->out_w = l->scale*w;
-	l->out_h = l->scale*h;
+	l->out_w = (int)(l->scale*w);
+	l->out_h = (int)(l->scale*h);
 
 	l->inputs = l->w * l->h * l->c;
 	l->outputs = l->out_h * l->out_w * l->out_c;
@@ -2098,7 +2108,7 @@ void forward_crop_layer(const crop_layer l, network net)
 void bilinear_init(layer l)
 {
 	int i, j, f;
-	float center = (l.size - 1) / 2.;
+	float center = (float)((l.size - 1) / 2.);
 	for (f = 0; f < l.n; ++f) {
 		for (j = 0; j < l.size; ++j) {
 			for (i = 0; i < l.size; ++i) {
@@ -2136,7 +2146,7 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
 	l.bias_updates = (float*)calloc(n, sizeof(float));
 	//float scale = n/(size*size*c);
 	//printf("scale: %f\n", scale);
-	float scale = .02;
+	float scale = (float).02;
 	for (i = 0; i < c*n*size*size; ++i) l.weights[i] = scale * rand_normal();
 	//bilinear_init(l);
 	for (i = 0; i < n; ++i) {
@@ -2249,7 +2259,7 @@ void denormalize_deconvolutional_layer(layer l)
 {
 	int i, j;
 	for (i = 0; i < l.n; ++i) {
-		float scale = l.scales[i] / sqrt(l.rolling_variance[i] + .00001);
+		float scale = (float)(l.scales[i] / sqrt(l.rolling_variance[i] + .00001));
 		for (j = 0; j < l.c*l.size*l.size; ++j) {
 			l.weights[i*l.c*l.size*l.size + j] *= scale;
 		}
@@ -2468,7 +2478,7 @@ void forward_detection_layer(const detection_layer l, network net)
 			int index = b * l.inputs;
 			for (i = 0; i < locations; ++i) {
 				int truth_index = (b*locations + i)*(1 + l.coords + l.classes);
-				int is_obj = net.truth[truth_index];
+				int is_obj = (int)(net.truth[truth_index]);
 				for (j = 0; j < l.n; ++j) {
 					int p_index = index + locations * l.classes + i * l.n + j;
 					l.delta[p_index] = l.noobject_scale*(0 - l.output[p_index]);
@@ -2553,7 +2563,7 @@ void forward_detection_layer(const detection_layer l, network net)
 				*(l.cost) -= l.noobject_scale * pow(l.output[p_index], 2);
 				*(l.cost) += l.object_scale * pow(1 - l.output[p_index], 2);
 				avg_obj += l.output[p_index];
-				l.delta[p_index] = l.object_scale * (1. - l.output[p_index]);
+				l.delta[p_index] = (float)(l.object_scale * (1. - l.output[p_index]));
 
 				if (l.rescore) {
 					l.delta[p_index] = l.object_scale * (iou - l.output[p_index]);
@@ -2682,7 +2692,7 @@ dropout_layer make_dropout_layer(int batch, int inputs, float probability)
 	l.outputs = inputs;
 	l.batch = batch;
 	l.rand = (float*)calloc(inputs*batch, sizeof(float));
-	l.scale = 1. / (1. - probability);
+	l.scale = (float)(1. / (1. - probability));
 	l.forward = forward_dropout_layer;
 	l.backward = backward_dropout_layer;
 #ifdef GPU
@@ -3239,7 +3249,7 @@ void forward_iseg_layer(const layer l, network net)
 		for (i = 0; i < ids; ++i) {
 			for (k = 0; k < l.w*l.h; ++k) {
 				int index = b * l.outputs + (i + l.classes)*l.w*l.h + k;
-				l.delta[index] = .1 * (0 - l.output[index]);
+				l.delta[index] = (float)(.1 * (0 - l.output[index]));
 			}
 		}
 
@@ -3248,7 +3258,7 @@ void forward_iseg_layer(const layer l, network net)
 		for (i = 0; i < 90; ++i) {
 			fill_cpu(ids, 0, l.sums[i], 1);
 
-			int c = net.truth[b*l.truths + i * (l.w*l.h + 1)];
+			int c = (int)(net.truth[b*l.truths + i * (l.w*l.h + 1)]);
 			if (c < 0) break;
 			// add up metric embeddings for each instance
 			for (k = 0; k < l.w*l.h; ++k) {
@@ -3264,7 +3274,7 @@ void forward_iseg_layer(const layer l, network net)
 
 		float *mse = (float*)calloc(90, sizeof(float));
 		for (i = 0; i < 90; ++i) {
-			int c = net.truth[b*l.truths + i * (l.w*l.h + 1)];
+			int c = (int)(net.truth[b*l.truths + i * (l.w*l.h + 1)]);
 			if (c < 0) break;
 			for (k = 0; k < l.w*l.h; ++k) {
 				float v = net.truth[b*l.truths + i * (l.w*l.h + 1) + 1 + k];
@@ -3307,8 +3317,8 @@ void forward_iseg_layer(const layer l, network net)
 						for (z = 0; z < ids; ++z) {
 							int index = b * l.outputs + (l.classes + z)*l.w*l.h + k;
 							float diff = l.sums[j][z] - l.output[index];
-							if (j == i) l.delta[index] += diff < 0 ? -.1 : .1;
-							else        l.delta[index] += -(diff < 0 ? -.1 : .1);
+							if (j == i) l.delta[index] += (float)(diff < 0 ? -.1 : .1);
+							else        l.delta[index] += (float)(-(diff < 0 ? -.1 : .1));
 						}
 					}
 				}
@@ -3318,7 +3328,7 @@ void forward_iseg_layer(const layer l, network net)
 		for (i = 0; i < ids; ++i) {
 			for (k = 0; k < l.w*l.h; ++k) {
 				int index = b * l.outputs + (i + l.classes)*l.w*l.h + k;
-				l.delta[index] *= .01;
+				l.delta[index] *= (float).01;
 			}
 		}
 	}
@@ -3475,7 +3485,7 @@ local_layer make_local_layer(int batch, int h, int w, int c, int n, int size, in
 	l.bias_updates = (float*)calloc(l.outputs, sizeof(float));
 
 	// float scale = 1./sqrt(size*size*c);
-	float scale = sqrt(2. / (size*size*c));
+	float scale = (float)(sqrt(2. / (size*size*c)));
 	for (i = 0; i < c*n*size*size; ++i) l.weights[i] = scale * rand_uniform(-1, 1);
 
 	l.output = (float*)calloc(l.batch*out_h * out_w * n, sizeof(float));
@@ -4830,7 +4840,7 @@ void delta_region_class(float *output, float *delta, int index, int class_n, int
 
 float logit(float x)
 {
-	return log(x / (1. - x));
+	return (float)log(x / (1. - x));
 }
 
 float tisnan(float x)
@@ -4892,7 +4902,7 @@ void forward_region_layer(const layer l, network net)
 			for (t = 0; t < 30; ++t) {
 				box truth = float_to_box(net.truth + t * (l.coords + 1) + b * l.truths, 1);
 				if (!truth.x) break;
-				int class_n = net.truth[t*(l.coords + 1) + b * l.truths + l.coords];
+				int class_n = (int)(net.truth[t*(l.coords + 1) + b * l.truths + l.coords]);
 				float maxp = 0;
 				int maxi = 0;
 				if (truth.x > 100000 && truth.y > 100000) {
@@ -4910,7 +4920,7 @@ void forward_region_layer(const layer l, network net)
 					int class_index = entry_index(l, b, maxi, l.coords + 1);
 					int obj_index = entry_index(l, b, maxi, l.coords);
 					delta_region_class(l.output, l.delta, class_index, class_n, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat, !l.softmax);
-					if (l.output[obj_index] < .3) l.delta[obj_index] = l.object_scale * (.3 - l.output[obj_index]);
+					if (l.output[obj_index] < .3) l.delta[obj_index] = (float)(l.object_scale * (.3 - l.output[obj_index]));
 					else  l.delta[obj_index] = 0;
 					l.delta[obj_index] = 0;
 					++class_count;
@@ -4944,11 +4954,11 @@ void forward_region_layer(const layer l, network net)
 
 					if (*(net.seen) < 12800) {
 						box truth = { 0 };
-						truth.x = (i + .5) / l.w;
-						truth.y = (j + .5) / l.h;
+						truth.x = (float)((i + .5) / l.w);
+						truth.y = (float)((j + .5) / l.h);
 						truth.w = l.biases[2 * n] / l.w;
 						truth.h = l.biases[2 * n + 1] / l.h;
-						delta_region_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, l.delta, .01, l.w*l.h);
+						delta_region_box(truth, l.output, l.biases, n, box_index, i, j, l.w, l.h, l.delta, (float).01, l.w*l.h);
 					}
 				}
 			}
@@ -4959,8 +4969,8 @@ void forward_region_layer(const layer l, network net)
 			if (!truth.x) break;
 			float best_iou = 0;
 			int best_n = 0;
-			i = (truth.x * l.w);
-			j = (truth.y * l.h);
+			i = (int)(truth.x * l.w);
+			j = (int)(truth.y * l.h);
 			box truth_shift = truth;
 			truth_shift.x = 0;
 			truth_shift.y = 0;
@@ -4984,7 +4994,7 @@ void forward_region_layer(const layer l, network net)
 			float iou = delta_region_box(truth, l.output, l.biases, best_n, box_index, i, j, l.w, l.h, l.delta, l.coord_scale *  (2 - truth.w*truth.h), l.w*l.h);
 			if (l.coords > 4) {
 				int mask_index = entry_index(l, b, best_n*l.w*l.h + j * l.w + i, 4);
-				delta_region_mask(net.truth + t * (l.coords + 1) + b * l.truths + 5, l.output, l.coords - 4, mask_index, l.delta, l.w*l.h, l.mask_scale);
+				delta_region_mask(net.truth + t * (l.coords + 1) + b * l.truths + 5, l.output, l.coords - 4, mask_index, l.delta, l.w*l.h, (int)l.mask_scale);
 			}
 			if (iou > .5) recall += 1;
 			avg_iou += iou;
@@ -4999,7 +5009,7 @@ void forward_region_layer(const layer l, network net)
 				l.delta[obj_index] = l.object_scale * (0 - l.output[obj_index]);
 			}
 
-			int class_n = net.truth[t*(l.coords + 1) + b * l.truths + l.coords];
+			int class_n = (int)(net.truth[t*(l.coords + 1) + b * l.truths + l.coords]);
 			if (l.map) class_n = l.map[class_n];
 			int class_index = entry_index(l, b, best_n*l.w*l.h + j * l.w + i, l.coords + 1);
 			delta_region_class(l.output, l.delta, class_index, class_n, l.classes, l.softmax_tree, l.class_scale, l.w*l.h, &avg_cat, !l.softmax);
@@ -5039,8 +5049,8 @@ void correct_region_boxes(detection *dets, int n, int w, int h, int netw, int ne
 	}
 	for (i = 0; i < n; ++i) {
 		box b = dets[i].bbox;
-		b.x = (b.x - (netw - new_w) / 2. / netw) / ((float)new_w / netw);
-		b.y = (b.y - (neth - new_h) / 2. / neth) / ((float)new_h / neth);
+		b.x = (float)((b.x - (netw - new_w) / 2. / netw) / ((float)new_w / netw));
+		b.y = (float)((b.y - (neth - new_h) / 2. / neth) / ((float)new_h / neth));
 		b.w *= (float)netw / new_w;
 		b.h *= (float)neth / new_h;
 		if (!relative) {
@@ -5077,7 +5087,7 @@ void get_region_detections(layer l, int w, int h, int netw, int neth, float thre
 			}
 		}
 		for (i = 0; i < l.outputs; ++i) {
-			l.output[i] = (l.output[i] + flip[i]) / 2.;
+			l.output[i] = (float)((l.output[i] + flip[i]) / 2.);
 		}
 	}
 	for (i = 0; i < l.w*l.h; ++i) {
@@ -6320,7 +6330,7 @@ void forward_yolo_layer(const layer l, network net)
 					if (best_iou > l.truth_thresh) {
 						l.delta[obj_index] = 1 - l.output[obj_index];
 
-						int class_n = net.truth[best_t*(4 + 1) + b * l.truths + 4];
+						int class_n = (int)(net.truth[best_t*(4 + 1) + b * l.truths + 4]);
 						if (l.map) class_n = l.map[class_n];
 						int class_index = entry_index(l, b, n*l.w*l.h + j * l.w + i, 4 + 1);
 						delta_yolo_class(l.output, l.delta, class_index, class_n, l.classes, l.w*l.h, 0);
@@ -6336,8 +6346,8 @@ void forward_yolo_layer(const layer l, network net)
 			if (!truth.x) break;
 			float best_iou = 0;
 			int best_n = 0;
-			i = (truth.x * l.w);
-			j = (truth.y * l.h);
+			i = (int)(truth.x * l.w);
+			j = (int)(truth.y * l.h);
 			box truth_shift = truth;
 			truth_shift.x = truth_shift.y = 0;
 			for (n = 0; n < l.total; ++n) {
@@ -6360,7 +6370,7 @@ void forward_yolo_layer(const layer l, network net)
 				avg_obj += l.output[obj_index];
 				l.delta[obj_index] = 1 - l.output[obj_index];
 
-				int class_n = net.truth[t*(4 + 1) + b * l.truths + 4];
+				int class_n = (int)(net.truth[t*(4 + 1) + b * l.truths + 4]);
 				if (l.map) class_n = l.map[class_n];
 				int class_index = entry_index(l, b, mask_n*l.w*l.h + j * l.w + i, 4 + 1);
 				delta_yolo_class(l.output, l.delta, class_index, class_n, l.classes, l.w*l.h, &avg_cat);
@@ -6397,8 +6407,8 @@ void correct_yolo_boxes(detection *dets, int n, int w, int h, int netw, int neth
 	}
 	for (i = 0; i < n; ++i) {
 		box b = dets[i].bbox;
-		b.x = (b.x - (netw - new_w) / 2. / netw) / ((float)new_w / netw);
-		b.y = (b.y - (neth - new_h) / 2. / neth) / ((float)new_h / neth);
+		b.x = (float)((b.x - (netw - new_w) / 2. / netw) / ((float)new_w / netw));
+		b.y = (float)((b.y - (neth - new_h) / 2. / neth) / ((float)new_h / neth));
 		b.w *= (float)netw / new_w;
 		b.h *= (float)neth / new_h;
 		if (!relative) {
@@ -6448,7 +6458,7 @@ void avg_flipped_yolo(layer l)
 		}
 	}
 	for (i = 0; i < l.outputs; ++i) {
-		l.output[i] = (l.output[i] + flip[i]) / 2.;
+		l.output[i] = (float)((l.output[i] + flip[i]) / 2.);
 	}
 }
 

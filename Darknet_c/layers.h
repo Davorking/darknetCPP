@@ -5,6 +5,9 @@
 #include <cmath>
 #include "darknet.h"
 
+//Since the include only applys to the usage of struct and enum, not the type defined returen type
+//Re-typedef the name
+
 typedef struct layer layer;
 typedef struct network network;
 typedef layer local_layer;
@@ -27,16 +30,12 @@ typedef struct tree tree;
 
 
 
-
-
-
-
 //activation_layer.h
 static inline float stair_activate(float x)
 {
-	int n = floor(x);
-	if (n % 2 == 0) return floor(x / 2.);
-	else return (x - n) + floor(x / 2.);
+	int n = (int)floor(x);
+	if (n % 2 == 0) return (float)floor(x / 2.);
+	else return (x - n) + (float)floor(x / 2.);
 }
 static inline float hardtan_activate(float x)
 {
@@ -45,32 +44,32 @@ static inline float hardtan_activate(float x)
 	return x;
 }
 static inline float linear_activate(float x) { return x; }
-static inline float logistic_activate(float x) { return 1. / (1. + exp(-x)); }
-static inline float loggy_activate(float x) { return 2. / (1. + exp(-x)) - 1; }
+static inline float logistic_activate(float x) { return (float)(1. / (1. + exp(-x))); }
+static inline float loggy_activate(float x) { return (float)(2. / (1. + exp(-x)) - 1); }
 static inline float relu_activate(float x) { return x * (x > 0); }
 static inline float elu_activate(float x) { return (x >= 0)*x + (x < 0)*(exp(x) - 1); }
-static inline float selu_activate(float x) { return (x >= 0)*1.0507*x + (x < 0)*1.0507*1.6732*(exp(x) - 1); }
-static inline float relie_activate(float x) { return (x > 0) ? x : .01*x; }
-static inline float ramp_activate(float x) { return x * (x > 0) + .1*x; }
-static inline float leaky_activate(float x) { return (x > 0) ? x : .1*x; }
+static inline float selu_activate(float x) { return (float)((x >= 0)*1.0507*x + (x < 0)*1.0507*1.6732*(exp(x) - 1)); }
+static inline float relie_activate(float x) { return (float)((x > 0) ? x : .01*x); }
+static inline float ramp_activate(float x) { return (float)(x * (x > 0) + .1*x); }
+static inline float leaky_activate(float x) { return (float)((x > 0) ? x : .1*x); }
 static inline float tanh_activate(float x) { return (exp(2 * x) - 1) / (exp(2 * x) + 1); }
 static inline float plse_activate(float x)
 {
-	if (x < -4) return .01 * (x + 4);
-	if (x > 4)  return .01 * (x - 4) + 1;
-	return .125*x + .5;
+	if (x < -4) return (float)(.01 * (x + 4));
+	if (x > 4)  return (float)(.01 * (x - 4) + 1);
+	return (float)(.125*x + .5);
 }
 
 static inline float lhtan_activate(float x)
 {
-	if (x < 0) return .001*x;
-	if (x > 1) return .001*(x - 1) + 1;
+	if (x < 0) return (float)(.001*x);
+	if (x > 1) return (float)(.001*(x - 1) + 1);
 	return x;
 }
 static inline float lhtan_gradient(float x)
 {
 	if (x > 0 && x < 1) return 1;
-	return .001;
+	return (float)(.001);
 }
 
 static inline float hardtan_gradient(float x)
@@ -82,7 +81,7 @@ static inline float linear_gradient(float x) { return 1; }
 static inline float logistic_gradient(float x) { return (1 - x)*x; }
 static inline float loggy_gradient(float x)
 {
-	float y = (x + 1.) / 2.;
+	float y = (float)((x + 1.) / 2.);
 	return 2 * (1 - y)*y;
 }
 static inline float stair_gradient(float x)
@@ -92,12 +91,12 @@ static inline float stair_gradient(float x)
 }
 static inline float relu_gradient(float x) { return (x > 0); }
 static inline float elu_gradient(float x) { return (x >= 0) + (x < 0)*(x + 1); }
-static inline float selu_gradient(float x) { return (x >= 0)*1.0507 + (x < 0)*(x + 1.0507*1.6732); }
-static inline float relie_gradient(float x) { return (x > 0) ? 1 : .01; }
-static inline float ramp_gradient(float x) { return (x > 0) + .1; }
-static inline float leaky_gradient(float x) { return (x > 0) ? 1 : .1; }
+static inline float selu_gradient(float x) { return (float)((x >= 0)*1.0507 + (x < 0)*(x + 1.0507*1.6732)); }
+static inline float relie_gradient(float x) { return (float)((x > 0) ? 1 : .01); }
+static inline float ramp_gradient(float x) { return (float)((x > 0) + .1); }
+static inline float leaky_gradient(float x) { return (float)((x > 0) ? 1 : .1); }
 static inline float tanh_gradient(float x) { return 1 - x * x; }
-static inline float plse_gradient(float x) { return (x < 0 || x > 1) ? .01 : .125; }
+static inline float plse_gradient(float x) { return (float)((x < 0 || x > 1) ? .01 : .125); }
 
 layer make_activation_layer(int batch, int inputs, ACTIVATION activation);
 void forward_activation_layer(layer l, network net);
@@ -174,7 +173,7 @@ void backward_connected_layer_gpu(layer l, network net);
 
 
 
-//convolutinal_layer.h
+//convolutional_layer.h
 void swap_binary(convolutional_layer *l);
 void binarize_weights(float *weights, int n, int size, float *binary);
 void binarize_cpu(float *input, int n, float *binary);
