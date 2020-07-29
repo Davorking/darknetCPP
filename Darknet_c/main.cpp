@@ -17,8 +17,8 @@ int main()
 	//char weightfile[80] = "C:\\Users\\ASUS\\Desktop\\temp_data\\data\\Yolo_v1\\extraction.conv.weights";
 	char cfgfile[80] = "C:\\Users\\ASUS\\Desktop\\temp_data\\darknet\\DarkNet\\darknet\\cfg\\yolov1.cfg";
 	char weightfile[80] = "C:\\Users\\ASUS\\Desktop\\temp_data\\data\\Yolo_v1\\pre-trained\\yolov1.weights";
-	char filename[100] = "C:\\Users\\ASUS\\Desktop\\temp_data\\darknet\\DarkNet\\darknet\\data\\dog.jpg";
-	float thresh = 0.25;
+	char filename[100] = "C:\\Users\\ASUS\\Desktop\\temp_data\\darknet\\DarkNet\\darknet\\data\\test_4.jpg";
+	float thresh = 0.10;
 	//	char train_images[40] = "/data/voc/train.txt";
 	//	char backup_directory[40] = "/home/pjreddie/backup/";
 
