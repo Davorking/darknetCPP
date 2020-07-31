@@ -7145,6 +7145,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
 	//The total number of weights is calculated as:
 	//input_channel / groups * filer_channel * kernel_size * kernel_size
 	int groups = option_find_int_quiet(options, (char*)"groups", 1);
+
 	if (pad) padding = size / 2;
 
 	char *activation_s = option_find_str(options, (char*)"activation", (char*)"logistic");
@@ -8165,7 +8166,11 @@ void load_convolutional_weights(layer l, FILE *fp)
 	}
 	if (l.numload) l.n = l.numload;
 	int num = l.c / l.groups*l.n*l.size*l.size;
-	fread(l.biases, sizeof(float), l.n, fp);
+
+	std::cout << "The number of biases supposed to be read in: " << l.n << std::endl;
+	int t_n_read = (int)fread(l.biases, sizeof(float), l.n, fp);
+	std::cout << "The number of biases read in: " << t_n_read << std::endl;
+	
 
 //	float* t_biases = new float [l.n];
 //	t_biases = l.biases;
@@ -8186,10 +8191,16 @@ void load_convolutional_weights(layer l, FILE *fp)
 
 
 	if (l.batch_normalize && (!l.dontloadscales)) {
-		fread(l.scales, sizeof(float), l.n, fp);
-		fread(l.rolling_mean, sizeof(float), l.n, fp);
-		fread(l.rolling_variance, sizeof(float), l.n, fp);
+		std::cout << "ENTERING THE HIDDEN BLOCK" << std::endl;
+
+		int t_n_scales = fread(l.scales, sizeof(float), l.n, fp);
+		int t_n_rolling_mean = fread(l.rolling_mean, sizeof(float), l.n, fp);
+		int t_n_rolling = fread(l.rolling_variance, sizeof(float), l.n, fp);
+		std::cout << "l.scales: " << t_n_scales << " l.rolling_mean: " << t_n_rolling_mean 
+			<< " l.rolling_variance: " << t_n_rolling << std::endl;
+
 		if (0) {
+			std::cout << "ENTERING THE HIDDEN HIDDEN BLOCK" << std::endl;
 			int i;
 			for (i = 0; i < l.n; ++i) {
 				printf("%g, ", l.rolling_mean[i]);
@@ -8217,7 +8228,9 @@ void load_convolutional_weights(layer l, FILE *fp)
 		}
 	}
 
-	fread(l.weights, sizeof(float), num, fp);
+	std::cout << "The number of weights supposed to be read in: " << num << std::endl;
+	int t_n_weights = (int)fread(l.weights, sizeof(float), num, fp);
+	std::cout << "The number of weights read in: " << t_n_weights << std::endl;
 	//if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
 	if (l.flipped) {
 		transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
@@ -8264,10 +8277,11 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
 		layer l = net->layers[i];
 		if (l.dontload) continue;
 		if (l.type == CONVOLUTIONAL || l.type == DECONVOLUTIONAL) {
+			std::cout << "\nLayer Name: " << "conv " << (i) << std::endl;
 			load_convolutional_weights(l, fp);
-		//	std::cout << "Layer Name: " << "conv " << (i + 1) << std::endl;
 		}
 		if (l.type == CONNECTED) {
+
 			load_connected_weights(l, fp, transpose);
 		}
 		if (l.type == BATCHNORM) {

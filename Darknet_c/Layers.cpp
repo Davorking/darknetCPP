@@ -969,6 +969,10 @@ int convolutional_out_height(convolutional_layer l)
 
 int convolutional_out_width(convolutional_layer l)
 {
+//	std::cout << "l.w: " << l.w << std::endl;
+//	std::cout << "l.pad: " << l.pad << std::endl;
+//	std::cout << "l.size: " << l.size << std::endl;
+//	std::cout << "(l.w + 2 * l.pad - l.size: " << (l.w + 2 * l.pad - l.size) << std::endl;
 	return (l.w + 2 * l.pad - l.size) / l.stride + 1;
 }
 
@@ -1093,6 +1097,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 	l.stride = stride;
 	l.size = size;
 	l.pad = padding;
+//	std::cout << "l.pad: " << l.pad << std::endl;
 	l.batch_normalize = batch_normalize;
 
 	l.weights = (float*)calloc(c / groups * n*size*size, sizeof(float));

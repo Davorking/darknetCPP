@@ -124,6 +124,7 @@
 		int forced;
 		int flipped;
 		int inputs;
+		//The number of parameters in one channel
 		int outputs;
 		int nweights;
 		int nbiases;
@@ -235,6 +236,7 @@
 		float * weight_updates;
 
 		float * delta;
+		//The output of the whole batch
 		float * output;
 		float * loss;
 		float * squared;
